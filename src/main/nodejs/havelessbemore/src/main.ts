@@ -14,6 +14,7 @@ export async function run(
   filePath: string,
   workerPath: string,
   maxWorkers: number,
+  outPath = ""
 ): Promise<void> {
   // Sanitize number of workers
   maxWorkers = clamp(maxWorkers, MIN_WORKERS, MAX_WORKERS);
@@ -87,9 +88,9 @@ export async function run(
   }
 
   // Print results
-  const out = createWriteStream("", {
+  const out = createWriteStream(outPath, {
+    fd: (outPath.length < 1) ? 1 : undefined,
     flags: "a",
-    fd: 1,
     highWaterMark: HIGH_WATER_MARK_OUT,
   });
   const buffer = Buffer.allocUnsafe(STATION_NAME_MAX_LEN);

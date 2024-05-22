@@ -219,7 +219,7 @@ function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
   } while (top >= 0);
 }
 
-async function run$1(filePath, workerPath, maxWorkers) {
+async function run$1(filePath, outPath, workerPath, maxWorkers) {
   maxWorkers = clamp(maxWorkers, MIN_WORKERS, MAX_WORKERS);
   const chunks = await getFileChunks(
     filePath,
@@ -273,9 +273,9 @@ async function run$1(filePath, workerPath, maxWorkers) {
   for (let i = 2; i <= maxWorkers; ++i) {
     mergeLeft(tries, 1, i, mergeStations);
   }
-  const out = createWriteStream("", {
+  const out = createWriteStream(outPath, {
     flags: "a",
-    fd: 1,
+    fd: outPath.length < 1 ? 1 : void 0,
     highWaterMark: HIGH_WATER_MARK_OUT
   });
   const buffer = Buffer.allocUnsafe(STATION_NAME_MAX_LEN);
@@ -368,7 +368,7 @@ function parseDouble(b, min, max) {
 
 if (isMainThread) {
   const workerPath = fileURLToPath(import.meta.url);
-  run$1(process.argv[2], workerPath, os.availableParallelism());
+  run$1(process.argv[2], "", workerPath, os.availableParallelism());
 } else {
   parentPort.addListener("message", async (req) => {
     const res = await run(req);

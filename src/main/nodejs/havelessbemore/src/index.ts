@@ -1,4 +1,4 @@
-import os from "node:os";
+import { availableParallelism } from "node:os";
 import { fileURLToPath } from "node:url";
 import { isMainThread, parentPort } from "node:worker_threads";
 
@@ -9,7 +9,7 @@ import { run as runWorker } from "./worker";
 
 if (isMainThread) {
   const workerPath = fileURLToPath(import.meta.url);
-  runMain(process.argv[2], workerPath, os.availableParallelism());
+  runMain(process.argv[2], workerPath, availableParallelism());
 } else {
   parentPort!.addListener("message", async (req: WorkerRequest) => {
     const res = await runWorker(req);
