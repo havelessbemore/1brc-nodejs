@@ -13,7 +13,6 @@ import {
   TRIE_NODE_ID_IDX,
   TRIE_NODE_LEN,
   TRIE_NODE_VALUE_IDX_IDX,
-  TRIE_NODE_VALUE_ID_IDX,
   TRIE_NULL,
   TRIE_ROOT_IDX,
   TRIE_SIZE_IDX,
@@ -61,6 +60,7 @@ export function createTrie(id = 0, size = MIN_TRIE_SIZE): Int32Array {
 }
 
 export function grow(trie: Int32Array, minSize = 0): Int32Array {
+  console.log("D");
   const length = trie[TRIE_SIZE_IDX];
   minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
   const next = new Int32Array(minSize);
@@ -74,7 +74,7 @@ export function mergeLeft(
   tries: Int32Array[],
   at: number,
   bt: number,
-  mergeFn: (at: number, ai: number, bt: number, bi: number) => void,
+  mergeFn: (ai: number, bi: number) => void,
 ): void {
   const queue: [number, number, number, number][] = [
     [at, TRIE_ROOT_IDX, bt, TRIE_ROOT_IDX],
@@ -86,16 +86,13 @@ export function mergeLeft(
       let [at, ai, bt, bi] = queue[q];
 
       // If right value is not null
-      const bvt = tries[bt][bi + TRIE_NODE_VALUE_ID_IDX];
       const bvi = tries[bt][bi + TRIE_NODE_VALUE_IDX_IDX];
-      if (bvt !== TRIE_NULL) {
+      if (bvi !== TRIE_NULL) {
         // If left value is not null
-        const avt = tries[at][ai + TRIE_NODE_VALUE_ID_IDX];
         const avi = tries[at][ai + TRIE_NODE_VALUE_IDX_IDX];
-        if (avt !== TRIE_NULL) {
-          mergeFn(avt, avi, bvt, bvi);
+        if (avi !== TRIE_NULL) {
+          mergeFn(avi, bvi);
         } else {
-          tries[at][ai + TRIE_NODE_VALUE_ID_IDX] = bvt;
           tries[at][ai + TRIE_NODE_VALUE_IDX_IDX] = bvi;
         }
       }
@@ -163,8 +160,7 @@ export function print(
     stream: WriteStream,
     key: Buffer,
     keyLen: number,
-    id: number,
-    value: number,
+    valueIndex: number,
   ) => void,
 ): void {
   const stack: [number, number, number][] = new Array(key.length + 1);
@@ -189,15 +185,14 @@ export function print(
     if (childKey === 0) {
       // Check if the node has a value
       const nodeIndex = childPtr - TRIE_NODE_CHILDREN_IDX;
-      const valueId = tries[trieI][nodeIndex + TRIE_NODE_VALUE_ID_IDX];
-      if (valueId !== TRIE_NULL) {
+      const valueIndex = tries[trieI][nodeIndex + TRIE_NODE_VALUE_IDX_IDX];
+      if (valueIndex !== TRIE_NULL) {
         // Print the node's value
         if (tail) {
           stream.write(separator);
         }
         tail = true;
-        const valueIndex = tries[trieI][nodeIndex + TRIE_NODE_VALUE_IDX_IDX];
-        callbackFn(stream, key, top, valueId, valueIndex);
+        callbackFn(stream, key, top, valueIndex);
       }
     }
 

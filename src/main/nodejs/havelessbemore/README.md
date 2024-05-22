@@ -25,6 +25,7 @@
   - RAM: 8 GB
   - Cores: 8 (4 performance + 4 efficiency)
   - OS: MacOS Sonoma
+
 - Other
   - NodeJS: v20.13.1
   - Web workers: 8

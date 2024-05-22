@@ -13,12 +13,6 @@ if (isMainThread) {
 } else {
   parentPort!.addListener("message", async (req: WorkerRequest) => {
     const res = await runWorker(req);
-    parentPort!.postMessage(res, [
-      res.trie.buffer,
-      res.counts.buffer,
-      res.maxes.buffer,
-      res.mins.buffer,
-      res.sums.buffer,
-    ]);
+    parentPort!.postMessage(res, [res.trie.buffer]);
   });
 }

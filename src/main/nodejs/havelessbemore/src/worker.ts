@@ -8,11 +8,7 @@ import { CHAR_NEWLINE } from "./constants/utf8";
 import { CHAR_MINUS } from "./constants/utf8";
 import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
 import { CHAR_ZERO_11, CHAR_ZERO_111 } from "./constants/stream";
-import {
-  TRIE_NODE_VALUE_ID_IDX,
-  TRIE_NODE_VALUE_IDX_IDX,
-  TRIE_NULL,
-} from "./constants/trie";
+import { TRIE_NODE_VALUE_IDX_IDX, TRIE_NULL } from "./constants/trie";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie } from "./utils/trie";
 
@@ -21,20 +17,20 @@ export async function run({
   filePath,
   id,
   start,
+  // Shared memory
+  counts,
+  maxes,
+  mins,
+  sums,
 }: WorkerRequest): Promise<WorkerResponse> {
-  const counts = new Uint32Array(MAX_STATIONS);
-  const maxes = new Int16Array(MAX_STATIONS);
-  const mins = new Int16Array(MAX_STATIONS);
-  const sums = new Float64Array(MAX_STATIONS);
-
   // Check chunk size
   if (start >= end) {
-    return { id, trie: createTrie(id, 0), counts, maxes, mins, sums };
+    return { id, trie: createTrie(id, 0) };
   }
 
   // Initialize constants
   let trie = createTrie(id);
-  let stations = 0;
+  let stations = id * MAX_STATIONS + 1;
   const buffer = Buffer.allocUnsafe(ENTRY_MAX_LEN);
 
   // Create the chunk stream
@@ -65,12 +61,11 @@ export async function run({
         // Add the station's name to the trie and get leaf index
         [trie, leaf] = add(trie, buffer, 0, tempI);
         // If the station existed
-        if (trie[leaf + TRIE_NODE_VALUE_ID_IDX] !== TRIE_NULL) {
+        if (trie[leaf + TRIE_NODE_VALUE_IDX_IDX] !== TRIE_NULL) {
           // Update the station's value
           updateStation(trie[leaf + TRIE_NODE_VALUE_IDX_IDX], tempV);
         } else {
           // Add the new station's value
-          trie[leaf + TRIE_NODE_VALUE_ID_IDX] = id;
           trie[leaf + TRIE_NODE_VALUE_IDX_IDX] = stations;
           newStation(stations++, tempV);
         }
@@ -92,7 +87,7 @@ export async function run({
     sums[index] += temp;
   }
 
-  return { id, trie, counts, maxes, mins, sums };
+  return { id, trie };
 }
 
 export function parseDouble(b: Buffer, min: number, max: number): number {

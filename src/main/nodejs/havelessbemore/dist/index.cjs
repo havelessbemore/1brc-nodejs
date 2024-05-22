@@ -1,6 +1,6 @@
 'use strict';
 
-var os = require('node:os');
+var node_os = require('node:os');
 var node_url = require('node:url');
 var node_worker_threads = require('node:worker_threads');
 var node_fs = require('node:fs');
@@ -79,13 +79,11 @@ const TRIE_RED_VALUE_IDX_LEN = 1;
 const TRIE_RED_LEN = TRIE_RED_ID_LEN + TRIE_RED_VALUE_IDX_LEN;
 const TRIE_NODE_ID_IDX = 0;
 const TRIE_NODE_ID_LEN = 1;
-const TRIE_NODE_VALUE_ID_IDX = 1;
-const TRIE_NODE_VALUE_ID_LEN = 1;
-const TRIE_NODE_VALUE_IDX_IDX = 2;
+const TRIE_NODE_VALUE_IDX_IDX = 1;
 const TRIE_NODE_VALUE_IDX_LEN = 1;
-const TRIE_NODE_CHILDREN_IDX = 3;
+const TRIE_NODE_CHILDREN_IDX = 2;
 const TRIE_NODE_CHILDREN_LEN = TRIE_CHILD_LEN * TRIE_MAX_CHILDREN;
-const TRIE_NODE_LEN = TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_NODE_CHILDREN_LEN;
+const TRIE_NODE_LEN = TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_NODE_CHILDREN_LEN;
 const TRIE_SIZE_IDX = 0;
 const TRIE_SIZE_LEN = 1;
 const TRIE_ROOT_IDX = 1;
@@ -119,6 +117,7 @@ function createTrie(id = 0, size = MIN_TRIE_SIZE) {
   return trie;
 }
 function grow(trie, minSize = 0) {
+  console.log("D");
   const length = trie[TRIE_SIZE_IDX];
   minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
   const next = new Int32Array(minSize);
@@ -135,15 +134,12 @@ function mergeLeft(tries, at, bt, mergeFn) {
     const Q = queue.length;
     for (let q = 0; q < Q; ++q) {
       let [at2, ai, bt2, bi] = queue[q];
-      const bvt = tries[bt2][bi + TRIE_NODE_VALUE_ID_IDX];
       const bvi = tries[bt2][bi + TRIE_NODE_VALUE_IDX_IDX];
-      if (bvt !== TRIE_NULL) {
-        const avt = tries[at2][ai + TRIE_NODE_VALUE_ID_IDX];
+      if (bvi !== TRIE_NULL) {
         const avi = tries[at2][ai + TRIE_NODE_VALUE_IDX_IDX];
-        if (avt !== TRIE_NULL) {
-          mergeFn(avt, avi, bvt, bvi);
+        if (avi !== TRIE_NULL) {
+          mergeFn(avi, bvi);
         } else {
-          tries[at2][ai + TRIE_NODE_VALUE_ID_IDX] = bvt;
           tries[at2][ai + TRIE_NODE_VALUE_IDX_IDX] = bvi;
         }
       }
@@ -199,14 +195,13 @@ function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
     stack[top][2] += TRIE_CHILD_LEN;
     if (childKey === 0) {
       const nodeIndex = childPtr - TRIE_NODE_CHILDREN_IDX;
-      const valueId = tries[trieI][nodeIndex + TRIE_NODE_VALUE_ID_IDX];
-      if (valueId !== TRIE_NULL) {
+      const valueIndex = tries[trieI][nodeIndex + TRIE_NODE_VALUE_IDX_IDX];
+      if (valueIndex !== TRIE_NULL) {
         if (tail) {
           stream.write(separator);
         }
         tail = true;
-        const valueIndex = tries[trieI][nodeIndex + TRIE_NODE_VALUE_IDX_IDX];
-        callbackFn(stream, key, top, valueId, valueIndex);
+        callbackFn(stream, key, top, valueIndex);
       }
     }
     let childI = tries[trieI][childPtr + TRIE_CHILD_IDX_IDX];
@@ -222,7 +217,7 @@ function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
   } while (top >= 0);
 }
 
-async function run$1(filePath, outPath, workerPath, maxWorkers) {
+async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
   maxWorkers = clamp(maxWorkers, MIN_WORKERS, MAX_WORKERS);
   const chunks = await getFileChunks(
     filePath,
@@ -231,11 +226,15 @@ async function run$1(filePath, outPath, workerPath, maxWorkers) {
     CHUNK_SIZE_MIN
   );
   maxWorkers = chunks.length;
-  const counts = new Array(maxWorkers + 1);
-  const maxes = new Array(maxWorkers + 1);
-  const mins = new Array(maxWorkers + 1);
-  const sums = new Array(maxWorkers + 1);
-  const tries = new Array(maxWorkers + 1);
+  const numVals = MAX_STATIONS * maxWorkers + 1;
+  let bpe = Uint32Array.BYTES_PER_ELEMENT;
+  const counts = new Uint32Array(new SharedArrayBuffer(bpe * numVals));
+  bpe = Int16Array.BYTES_PER_ELEMENT;
+  const maxes = new Int16Array(new SharedArrayBuffer(bpe * numVals));
+  const mins = new Int16Array(new SharedArrayBuffer(bpe * numVals));
+  bpe = Float64Array.BYTES_PER_ELEMENT;
+  const sums = new Float64Array(new SharedArrayBuffer(bpe * numVals));
+  const tries = new Array(maxWorkers);
   const workers = new Array(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
     const worker = new node_worker_threads.Worker(workerPath);
@@ -254,52 +253,56 @@ async function run$1(filePath, outPath, workerPath, maxWorkers) {
   }
   const tasks = new Array(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
-    const id = i + 1;
+    const id = i;
     const worker = workers[i];
     const [start, end] = chunks[i];
     tasks[i] = new Promise((resolve) => {
       worker.once("message", resolve);
-      worker.postMessage({ end, filePath, id, start });
+      worker.postMessage({
+        counts,
+        end,
+        filePath,
+        id,
+        maxes,
+        mins,
+        start,
+        sums
+      });
     });
   }
   for await (const res of tasks) {
-    const id = res.id;
-    counts[id] = res.counts;
-    maxes[id] = res.maxes;
-    mins[id] = res.mins;
-    sums[id] = res.sums;
-    tries[id] = res.trie;
+    tries[res.id] = res.trie;
   }
   for (let i = 0; i < maxWorkers; ++i) {
     await workers[i].terminate();
   }
-  for (let i = 2; i <= maxWorkers; ++i) {
-    mergeLeft(tries, 1, i, mergeStations);
+  for (let i = 1; i < maxWorkers; ++i) {
+    mergeLeft(tries, 0, i, mergeStations);
   }
   const out = node_fs.createWriteStream(outPath, {
-    flags: "a",
     fd: outPath.length < 1 ? 1 : void 0,
+    flags: "a",
     highWaterMark: HIGH_WATER_MARK_OUT
   });
   const buffer = Buffer.allocUnsafe(STATION_NAME_MAX_LEN);
   out.write("{");
-  print(tries, buffer, 1, out, ", ", printStation);
+  print(tries, buffer, 0, out, ", ", printStation);
   out.end("}\n");
-  function mergeStations(at, ai, bt, bi) {
-    counts[at][ai] += counts[bt][bi];
-    maxes[at][ai] = Math.max(maxes[at][ai], maxes[bt][bi]);
-    mins[at][ai] = Math.min(mins[at][ai], mins[bt][bi]);
-    sums[at][ai] += sums[bt][bi];
+  function mergeStations(ai, bi) {
+    counts[ai] += counts[bi];
+    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    mins[ai] = Math.min(mins[ai], mins[bi]);
+    sums[ai] += sums[bi];
   }
-  function printStation(stream, name, nameLen, vt, vi) {
-    const avg = Math.round(sums[vt][vi] / counts[vt][vi]);
+  function printStation(stream, name, nameLen, vi) {
+    const avg = Math.round(sums[vi] / counts[vi]);
     stream.write(name.toString("utf8", 0, nameLen));
     stream.write("=");
-    stream.write((mins[vt][vi] / 10).toFixed(1));
+    stream.write((mins[vi] / 10).toFixed(1));
     stream.write("/");
     stream.write((avg / 10).toFixed(1));
     stream.write("/");
-    stream.write((maxes[vt][vi] / 10).toFixed(1));
+    stream.write((maxes[vi] / 10).toFixed(1));
   }
 }
 
@@ -307,17 +310,18 @@ async function run({
   end,
   filePath,
   id,
-  start
+  start,
+  // Shared memory
+  counts,
+  maxes,
+  mins,
+  sums
 }) {
-  const counts = new Uint32Array(MAX_STATIONS);
-  const maxes = new Int16Array(MAX_STATIONS);
-  const mins = new Int16Array(MAX_STATIONS);
-  const sums = new Float64Array(MAX_STATIONS);
   if (start >= end) {
-    return { id, trie: createTrie(id, 0), counts, maxes, mins, sums };
+    return { id, trie: createTrie(id, 0) };
   }
   let trie = createTrie(id);
-  let stations = 0;
+  let stations = id * MAX_STATIONS + 1;
   const buffer = Buffer.allocUnsafe(ENTRY_MAX_LEN);
   const stream = node_fs.createReadStream(filePath, {
     start,
@@ -338,10 +342,9 @@ async function run({
         const tempV = parseDouble(buffer, tempI, bufI);
         bufI = 0;
         [trie, leaf] = add(trie, buffer, 0, tempI);
-        if (trie[leaf + TRIE_NODE_VALUE_ID_IDX] !== TRIE_NULL) {
+        if (trie[leaf + TRIE_NODE_VALUE_IDX_IDX] !== TRIE_NULL) {
           updateStation(trie[leaf + TRIE_NODE_VALUE_IDX_IDX], tempV);
         } else {
-          trie[leaf + TRIE_NODE_VALUE_ID_IDX] = id;
           trie[leaf + TRIE_NODE_VALUE_IDX_IDX] = stations;
           newStation(stations++, tempV);
         }
@@ -360,7 +363,7 @@ async function run({
     mins[index] = mins[index] <= temp ? mins[index] : temp;
     sums[index] += temp;
   }
-  return { id, trie, counts, maxes, mins, sums };
+  return { id, trie };
 }
 function parseDouble(b, min, max) {
   if (b[min] === CHAR_MINUS) {
@@ -371,17 +374,11 @@ function parseDouble(b, min, max) {
 
 if (node_worker_threads.isMainThread) {
   const workerPath = node_url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
-  run$1(process.argv[2], "", workerPath, os.availableParallelism());
+  run$1(process.argv[2], workerPath, node_os.availableParallelism());
 } else {
   node_worker_threads.parentPort.addListener("message", async (req) => {
     const res = await run(req);
-    node_worker_threads.parentPort.postMessage(res, [
-      res.trie.buffer,
-      res.counts.buffer,
-      res.maxes.buffer,
-      res.mins.buffer,
-      res.sums.buffer
-    ]);
+    node_worker_threads.parentPort.postMessage(res, [res.trie.buffer]);
   });
 }
 //# sourceMappingURL=index.cjs.map
