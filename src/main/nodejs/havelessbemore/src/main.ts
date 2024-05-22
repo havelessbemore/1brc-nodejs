@@ -12,7 +12,7 @@ import {
 import { CHUNK_SIZE_MIN, HIGH_WATER_MARK_OUT } from "./constants/stream";
 import { MAX_WORKERS, MIN_WORKERS } from "./constants/workers";
 import { clamp, getFileChunks } from "./utils/stream";
-import { mergeLeft, print } from "./utils/trie";
+import { mergeLeft, print } from "./utils/utf8Trie";
 
 export async function run(
   filePath: string,

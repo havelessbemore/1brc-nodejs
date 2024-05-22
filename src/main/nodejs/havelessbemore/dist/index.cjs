@@ -15,9 +15,9 @@ const CHAR_MINUS = 45;
 const CHAR_NEWLINE = 10;
 const CHAR_SEMICOLON = 59;
 const CHAR_ZERO = 48;
-const UTF8_2B_MAX = 224;
-const UTF8_PRINT_OFFSET = 32;
-const UTF8_2B_PRINT_MAX = UTF8_2B_MAX - UTF8_PRINT_OFFSET;
+const UTF8_B0_MIN = 32;
+const UTF8_B0_2B_MAX = 223;
+const UTF8_B0_2B_LEN = UTF8_B0_2B_MAX - UTF8_B0_MIN + 1;
 
 const HIGH_WATER_MARK_MIN = 16384;
 const HIGH_WATER_MARK_MAX = 1048576;
@@ -68,7 +68,7 @@ function getHighWaterMark(size) {
 const TRIE_NULL = 0;
 const MIN_TRIE_SIZE = 524288;
 const TRIE_GROWTH_FACTOR = 1.618;
-const TRIE_MAX_CHILDREN = UTF8_2B_PRINT_MAX;
+const TRIE_MAX_CHILDREN = UTF8_B0_2B_LEN;
 const TRIE_CHILD_IDX_IDX = 0;
 const TRIE_CHILD_IDX_LEN = 1;
 const TRIE_CHILD_LEN = TRIE_CHILD_IDX_LEN;
@@ -94,7 +94,7 @@ const TRIE_ID_IDX = TRIE_ROOT_IDX + TRIE_NODE_ID_IDX;
 function add(trie, key, min, max) {
   let index = TRIE_ROOT_IDX;
   while (min < max) {
-    index += TRIE_NODE_CHILDREN_IDX + TRIE_CHILD_LEN * (key[min++] - UTF8_PRINT_OFFSET);
+    index += TRIE_NODE_CHILDREN_IDX + TRIE_CHILD_LEN * (key[min++] - UTF8_B0_MIN);
     let child = trie[index + TRIE_CHILD_IDX_IDX];
     if (child === TRIE_NULL) {
       child = trie[TRIE_SIZE_IDX];
@@ -211,7 +211,7 @@ function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
         childI = tries[trieI][childI + TRIE_RED_VALUE_IDX_IDX];
         trieI = childTrieI;
       }
-      key[top] = childKey + UTF8_PRINT_OFFSET;
+      key[top] = childKey + UTF8_B0_MIN;
       stack[++top] = [trieI, 0, childI + TRIE_NODE_CHILDREN_IDX];
     }
   } while (top >= 0);

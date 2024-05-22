@@ -19,8 +19,8 @@ import {
   TRIE_RED_LEN,
   TRIE_RED_VALUE_IDX_IDX,
   TRIE_RED_ID_IDX,
-} from "../constants/trie";
-import { UTF8_PRINT_OFFSET } from "../constants/utf8";
+} from "../constants/utf8Trie";
+import { UTF8_B0_MIN } from "../constants/utf8";
 
 export function add(
   trie: Int32Array,
@@ -31,8 +31,7 @@ export function add(
   let index = TRIE_ROOT_IDX;
   while (min < max) {
     index +=
-      TRIE_NODE_CHILDREN_IDX +
-      TRIE_CHILD_LEN * (key[min++] - UTF8_PRINT_OFFSET);
+      TRIE_NODE_CHILDREN_IDX + TRIE_CHILD_LEN * (key[min++] - UTF8_B0_MIN);
     let child = trie[index + TRIE_CHILD_IDX_IDX];
     if (child === TRIE_NULL) {
       // Allocate new node
@@ -206,7 +205,7 @@ export function print(
         trieI = childTrieI;
       }
       // Add the child to the stack
-      key[top] = childKey + UTF8_PRINT_OFFSET;
+      key[top] = childKey + UTF8_B0_MIN;
       stack[++top] = [trieI, 0, childI + TRIE_NODE_CHILDREN_IDX];
     }
   } while (top >= 0);

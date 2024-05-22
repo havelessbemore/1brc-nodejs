@@ -8,9 +8,9 @@ import { CHAR_NEWLINE } from "./constants/utf8";
 import { CHAR_MINUS } from "./constants/utf8";
 import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
 import { CHAR_ZERO_11, CHAR_ZERO_111 } from "./constants/stream";
-import { TRIE_NODE_VALUE_IDX_IDX, TRIE_NULL } from "./constants/trie";
+import { TRIE_NODE_VALUE_IDX_IDX, TRIE_NULL } from "./constants/utf8Trie";
 import { getHighWaterMark } from "./utils/stream";
-import { add, createTrie } from "./utils/trie";
+import { add, createTrie } from "./utils/utf8Trie";
 
 export async function run({
   end,

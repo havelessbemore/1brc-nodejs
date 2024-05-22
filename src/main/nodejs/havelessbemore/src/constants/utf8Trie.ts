@@ -1,6 +1,6 @@
-import { UTF8_2B_PRINT_MAX } from "./utf8";
-
 // Trie static properties
+
+import { UTF8_B0_2B_LEN } from "./utf8";
 
 /**
  * Represents null / undefined.
@@ -25,7 +25,7 @@ export const TRIE_UNIT = Int32Array.BYTES_PER_ELEMENT;
 /**
  * The maximum number of children of any trie node.
  */
-export const TRIE_MAX_CHILDREN = UTF8_2B_PRINT_MAX;
+export const TRIE_MAX_CHILDREN = UTF8_B0_2B_LEN;
 
 // Trie child pointer properties
 
