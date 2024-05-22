@@ -28,47 +28,47 @@ export const TRIE_TAIL_NODE_CHILDREN_LEN = UTF8_B0_2B_LEN;
 // Trie child pointer properties
 
 export const TRIE_CHILD_IDX_IDX = 0;
-export const TRIE_CHILD_IDX_UTS = 1;
+export const TRIE_CHILD_IDX_MEM = 1;
 
-export const TRIE_CHILD_UTS = TRIE_CHILD_IDX_UTS;
+export const TRIE_CHILD_MEM = TRIE_CHILD_IDX_MEM;
 
 // Trie redirect pointer properties
 
 export const TRIE_RED_ID_IDX = 0;
-export const TRIE_RED_ID_UTS = 1;
+export const TRIE_RED_ID_MEM = 1;
 
 export const TRIE_RED_VALUE_IDX_IDX = 1;
-export const TRIE_RED_VALUE_IDX_UTS = 1;
+export const TRIE_RED_VALUE_IDX_MEM = 1;
 
-export const TRIE_RED_UTS = TRIE_RED_ID_UTS + TRIE_RED_VALUE_IDX_UTS;
+export const TRIE_RED_MEM = TRIE_RED_ID_MEM + TRIE_RED_VALUE_IDX_MEM;
 
 // Trie node properties
 
 export const TRIE_NODE_ID_IDX = 0;
-export const TRIE_NODE_ID_UTS = 1;
+export const TRIE_NODE_ID_MEM = 1;
 
 export const TRIE_NODE_VALUE_IDX_IDX = 1;
-export const TRIE_NODE_VALUE_IDX_UTS = 1;
+export const TRIE_NODE_VALUE_IDX_MEM = 1;
 
 export const TRIE_NODE_CHILDREN_IDX = 2;
-export const TRIE_BODY_NODE_CHILDREN_UTS =
-  TRIE_CHILD_UTS * TRIE_BODY_NODE_CHILDREN_LEN;
-export const TRIE_TAIL_NODE_CHILDREN_UTS =
-  TRIE_CHILD_UTS * TRIE_TAIL_NODE_CHILDREN_LEN;
+export const TRIE_BODY_NODE_CHILDREN_MEM =
+  TRIE_CHILD_MEM * TRIE_BODY_NODE_CHILDREN_LEN;
+export const TRIE_TAIL_NODE_CHILDREN_MEM =
+  TRIE_CHILD_MEM * TRIE_TAIL_NODE_CHILDREN_LEN;
 
-export const TRIE_BODY_NODE_UTS =
-  TRIE_NODE_ID_UTS + TRIE_NODE_VALUE_IDX_UTS + TRIE_BODY_NODE_CHILDREN_UTS;
+export const TRIE_BODY_NODE_MEM =
+  TRIE_NODE_ID_MEM + TRIE_NODE_VALUE_IDX_MEM + TRIE_BODY_NODE_CHILDREN_MEM;
 
-export const TRIE_TAIL_NODE_UTS =
-  TRIE_NODE_ID_UTS + TRIE_NODE_VALUE_IDX_UTS + TRIE_TAIL_NODE_CHILDREN_UTS;
+export const TRIE_TAIL_NODE_MEM =
+  TRIE_NODE_ID_MEM + TRIE_NODE_VALUE_IDX_MEM + TRIE_TAIL_NODE_CHILDREN_MEM;
 
 // Trie properties
 
 export const TRIE_SIZE_IDX = 0;
-export const TRIE_SIZE_UTS = 1;
+export const TRIE_SIZE_MEM = 1;
 
 export const TRIE_ROOT_IDX = 1;
-export const TRIE_ROOT_UTS = TRIE_TAIL_NODE_UTS;
+export const TRIE_ROOT_MEM = TRIE_TAIL_NODE_MEM;
 
 export const TRIE_ID_IDX = TRIE_ROOT_IDX + TRIE_NODE_ID_IDX;
-export const TRIE_HEADER_UTS = TRIE_SIZE_UTS + TRIE_ROOT_UTS;
+export const TRIE_HEADER_MEM = TRIE_SIZE_MEM + TRIE_ROOT_MEM;
