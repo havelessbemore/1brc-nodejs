@@ -1,6 +1,6 @@
 // Trie static properties
 
-import { UTF8_B0_2B_LEN } from "./utf8";
+import { UTF8_B0_2B_LEN, UTF8_BN_LEN } from "./utf8";
 
 /**
  * Represents null / undefined.
@@ -22,10 +22,8 @@ export const TRIE_GROWTH_FACTOR = 1.618; // ~phi
  */
 export const TRIE_UNIT = Int32Array.BYTES_PER_ELEMENT;
 
-/**
- * The maximum number of children of any trie node.
- */
-export const TRIE_MAX_CHILDREN = UTF8_B0_2B_LEN;
+export const TRIE_BODY_NODE_CHILDREN_NUM = UTF8_BN_LEN;
+export const TRIE_TAIL_NODE_CHILDREN_NUM = UTF8_B0_2B_LEN;
 
 // Trie child pointer properties
 
@@ -53,10 +51,16 @@ export const TRIE_NODE_VALUE_IDX_IDX = 1;
 export const TRIE_NODE_VALUE_IDX_LEN = 1;
 
 export const TRIE_NODE_CHILDREN_IDX = 2;
-export const TRIE_NODE_CHILDREN_LEN = TRIE_CHILD_LEN * TRIE_MAX_CHILDREN;
+export const TRIE_BODY_NODE_CHILDREN_LEN =
+  TRIE_CHILD_LEN * TRIE_BODY_NODE_CHILDREN_NUM;
+export const TRIE_TAIL_NODE_CHILDREN_LEN =
+  TRIE_CHILD_LEN * TRIE_TAIL_NODE_CHILDREN_NUM;
 
-export const TRIE_NODE_LEN =
-  TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_NODE_CHILDREN_LEN;
+export const TRIE_BODY_NODE_LEN =
+  TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_BODY_NODE_CHILDREN_LEN;
+
+export const TRIE_TAIL_NODE_LEN =
+  TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_TAIL_NODE_CHILDREN_LEN;
 
 // Trie properties
 
@@ -64,7 +68,7 @@ export const TRIE_SIZE_IDX = 0;
 export const TRIE_SIZE_LEN = 1;
 
 export const TRIE_ROOT_IDX = 1;
-export const TRIE_ROOT_LEN = TRIE_NODE_LEN;
+export const TRIE_ROOT_LEN = TRIE_TAIL_NODE_LEN;
 
 export const TRIE_HEADER_LEN = TRIE_SIZE_LEN + TRIE_ROOT_LEN;
 export const TRIE_ID_IDX = TRIE_ROOT_IDX + TRIE_NODE_ID_IDX;

@@ -65,7 +65,7 @@ function getHighWaterMark(size) {
 const TRIE_NULL = 0;
 const MIN_TRIE_SIZE = 524288;
 const TRIE_GROWTH_FACTOR = 1.618;
-const TRIE_MAX_CHILDREN = UTF8_B0_2B_LEN;
+const TRIE_TAIL_NODE_CHILDREN_NUM = UTF8_B0_2B_LEN;
 const TRIE_CHILD_IDX_IDX = 0;
 const TRIE_CHILD_IDX_LEN = 1;
 const TRIE_CHILD_LEN = TRIE_CHILD_IDX_LEN;
@@ -79,12 +79,12 @@ const TRIE_NODE_ID_LEN = 1;
 const TRIE_NODE_VALUE_IDX_IDX = 1;
 const TRIE_NODE_VALUE_IDX_LEN = 1;
 const TRIE_NODE_CHILDREN_IDX = 2;
-const TRIE_NODE_CHILDREN_LEN = TRIE_CHILD_LEN * TRIE_MAX_CHILDREN;
-const TRIE_NODE_LEN = TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_NODE_CHILDREN_LEN;
+const TRIE_TAIL_NODE_CHILDREN_LEN = TRIE_CHILD_LEN * TRIE_TAIL_NODE_CHILDREN_NUM;
+const TRIE_TAIL_NODE_LEN = TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_TAIL_NODE_CHILDREN_LEN;
 const TRIE_SIZE_IDX = 0;
 const TRIE_SIZE_LEN = 1;
 const TRIE_ROOT_IDX = 1;
-const TRIE_ROOT_LEN = TRIE_NODE_LEN;
+const TRIE_ROOT_LEN = TRIE_TAIL_NODE_LEN;
 const TRIE_HEADER_LEN = TRIE_SIZE_LEN + TRIE_ROOT_LEN;
 const TRIE_ID_IDX = TRIE_ROOT_IDX + TRIE_NODE_ID_IDX;
 
@@ -95,10 +95,10 @@ function add(trie, key, min, max) {
     let child = trie[index + TRIE_CHILD_IDX_IDX];
     if (child === TRIE_NULL) {
       child = trie[TRIE_SIZE_IDX];
-      if (child + TRIE_NODE_LEN > trie.length) {
-        trie = grow(trie, child + TRIE_NODE_LEN);
+      if (child + TRIE_TAIL_NODE_LEN > trie.length) {
+        trie = grow(trie, child + TRIE_TAIL_NODE_LEN);
       }
-      trie[TRIE_SIZE_IDX] += TRIE_NODE_LEN;
+      trie[TRIE_SIZE_IDX] += TRIE_TAIL_NODE_LEN;
       trie[index + TRIE_CHILD_IDX_IDX] = child;
       trie[child + TRIE_NODE_ID_IDX] = trie[TRIE_ID_IDX];
     }
@@ -142,7 +142,7 @@ function mergeLeft(tries, at, bt, mergeFn) {
       }
       ai += TRIE_NODE_CHILDREN_IDX;
       bi += TRIE_NODE_CHILDREN_IDX;
-      const bn = bi + TRIE_NODE_CHILDREN_LEN;
+      const bn = bi + TRIE_TAIL_NODE_CHILDREN_LEN;
       while (bi < bn) {
         let ri = tries[bt2][bi + TRIE_CHILD_IDX_IDX];
         if (ri === TRIE_NULL) {
@@ -184,7 +184,7 @@ function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
   let tail = false;
   do {
     let [trieI, childKey, childPtr] = stack[top];
-    if (childKey >= TRIE_MAX_CHILDREN) {
+    if (childKey >= TRIE_TAIL_NODE_CHILDREN_NUM) {
       --top;
       continue;
     }

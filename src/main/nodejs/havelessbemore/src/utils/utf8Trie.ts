@@ -7,11 +7,8 @@ import {
   TRIE_GROWTH_FACTOR,
   TRIE_HEADER_LEN,
   TRIE_ID_IDX,
-  TRIE_MAX_CHILDREN,
   TRIE_NODE_CHILDREN_IDX,
-  TRIE_NODE_CHILDREN_LEN,
   TRIE_NODE_ID_IDX,
-  TRIE_NODE_LEN,
   TRIE_NODE_VALUE_IDX_IDX,
   TRIE_NULL,
   TRIE_ROOT_IDX,
@@ -19,6 +16,9 @@ import {
   TRIE_RED_LEN,
   TRIE_RED_VALUE_IDX_IDX,
   TRIE_RED_ID_IDX,
+  TRIE_TAIL_NODE_CHILDREN_NUM,
+  TRIE_TAIL_NODE_CHILDREN_LEN,
+  TRIE_TAIL_NODE_LEN,
 } from "../constants/utf8Trie";
 import { UTF8_B0_MIN } from "../constants/utf8";
 
@@ -36,10 +36,10 @@ export function add(
     if (child === TRIE_NULL) {
       // Allocate new node
       child = trie[TRIE_SIZE_IDX];
-      if (child + TRIE_NODE_LEN > trie.length) {
-        trie = grow(trie, child + TRIE_NODE_LEN);
+      if (child + TRIE_TAIL_NODE_LEN > trie.length) {
+        trie = grow(trie, child + TRIE_TAIL_NODE_LEN);
       }
-      trie[TRIE_SIZE_IDX] += TRIE_NODE_LEN;
+      trie[TRIE_SIZE_IDX] += TRIE_TAIL_NODE_LEN;
       // Attach and initialize node
       trie[index + TRIE_CHILD_IDX_IDX] = child;
       trie[child + TRIE_NODE_ID_IDX] = trie[TRIE_ID_IDX];
@@ -101,7 +101,7 @@ export function mergeLeft(
       bi += TRIE_NODE_CHILDREN_IDX;
 
       // Traverse right children
-      const bn = bi + TRIE_NODE_CHILDREN_LEN;
+      const bn = bi + TRIE_TAIL_NODE_CHILDREN_LEN;
       while (bi < bn) {
         // If right child is null
         let ri = tries[bt][bi + TRIE_CHILD_IDX_IDX];
@@ -171,7 +171,7 @@ export function print(
     let [trieI, childKey, childPtr] = stack[top];
 
     // Check if end of children array
-    if (childKey >= TRIE_MAX_CHILDREN) {
+    if (childKey >= TRIE_TAIL_NODE_CHILDREN_NUM) {
       --top;
       continue;
     }
