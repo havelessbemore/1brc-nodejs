@@ -65,40 +65,40 @@ function getHighWaterMark(size) {
 const TRIE_NULL = 0;
 const MIN_TRIE_SIZE = 524288;
 const TRIE_GROWTH_FACTOR = 1.618;
-const TRIE_TAIL_NODE_CHILDREN_NUM = UTF8_B0_2B_LEN;
+const TRIE_TAIL_NODE_CHILDREN_LEN = UTF8_B0_2B_LEN;
 const TRIE_CHILD_IDX_IDX = 0;
-const TRIE_CHILD_IDX_LEN = 1;
-const TRIE_CHILD_LEN = TRIE_CHILD_IDX_LEN;
+const TRIE_CHILD_IDX_UTS = 1;
+const TRIE_CHILD_UTS = TRIE_CHILD_IDX_UTS;
 const TRIE_RED_ID_IDX = 0;
-const TRIE_RED_ID_LEN = 1;
+const TRIE_RED_ID_UTS = 1;
 const TRIE_RED_VALUE_IDX_IDX = 1;
-const TRIE_RED_VALUE_IDX_LEN = 1;
-const TRIE_RED_LEN = TRIE_RED_ID_LEN + TRIE_RED_VALUE_IDX_LEN;
+const TRIE_RED_VALUE_IDX_UTS = 1;
+const TRIE_RED_UTS = TRIE_RED_ID_UTS + TRIE_RED_VALUE_IDX_UTS;
 const TRIE_NODE_ID_IDX = 0;
-const TRIE_NODE_ID_LEN = 1;
+const TRIE_NODE_ID_UTS = 1;
 const TRIE_NODE_VALUE_IDX_IDX = 1;
-const TRIE_NODE_VALUE_IDX_LEN = 1;
+const TRIE_NODE_VALUE_IDX_UTS = 1;
 const TRIE_NODE_CHILDREN_IDX = 2;
-const TRIE_TAIL_NODE_CHILDREN_LEN = TRIE_CHILD_LEN * TRIE_TAIL_NODE_CHILDREN_NUM;
-const TRIE_TAIL_NODE_LEN = TRIE_NODE_ID_LEN + TRIE_NODE_VALUE_IDX_LEN + TRIE_TAIL_NODE_CHILDREN_LEN;
+const TRIE_TAIL_NODE_CHILDREN_UTS = TRIE_CHILD_UTS * TRIE_TAIL_NODE_CHILDREN_LEN;
+const TRIE_TAIL_NODE_UTS = TRIE_NODE_ID_UTS + TRIE_NODE_VALUE_IDX_UTS + TRIE_TAIL_NODE_CHILDREN_UTS;
 const TRIE_SIZE_IDX = 0;
-const TRIE_SIZE_LEN = 1;
+const TRIE_SIZE_UTS = 1;
 const TRIE_ROOT_IDX = 1;
-const TRIE_ROOT_LEN = TRIE_TAIL_NODE_LEN;
-const TRIE_HEADER_LEN = TRIE_SIZE_LEN + TRIE_ROOT_LEN;
+const TRIE_ROOT_UTS = TRIE_TAIL_NODE_UTS;
 const TRIE_ID_IDX = TRIE_ROOT_IDX + TRIE_NODE_ID_IDX;
+const TRIE_HEADER_UTS = TRIE_SIZE_UTS + TRIE_ROOT_UTS;
 
 function add(trie, key, min, max) {
   let index = TRIE_ROOT_IDX;
   while (min < max) {
-    index += TRIE_NODE_CHILDREN_IDX + TRIE_CHILD_LEN * (key[min++] - UTF8_B0_MIN);
+    index += TRIE_NODE_CHILDREN_IDX + TRIE_CHILD_UTS * (key[min++] - UTF8_B0_MIN);
     let child = trie[index + TRIE_CHILD_IDX_IDX];
     if (child === TRIE_NULL) {
       child = trie[TRIE_SIZE_IDX];
-      if (child + TRIE_TAIL_NODE_LEN > trie.length) {
-        trie = grow(trie, child + TRIE_TAIL_NODE_LEN);
+      if (child + TRIE_TAIL_NODE_UTS > trie.length) {
+        trie = grow(trie, child + TRIE_TAIL_NODE_UTS);
       }
-      trie[TRIE_SIZE_IDX] += TRIE_TAIL_NODE_LEN;
+      trie[TRIE_SIZE_IDX] += TRIE_TAIL_NODE_UTS;
       trie[index + TRIE_CHILD_IDX_IDX] = child;
       trie[child + TRIE_NODE_ID_IDX] = trie[TRIE_ID_IDX];
     }
@@ -107,7 +107,7 @@ function add(trie, key, min, max) {
   return [trie, index];
 }
 function createTrie(id = 0, size = MIN_TRIE_SIZE) {
-  const minSize = TRIE_HEADER_LEN;
+  const minSize = TRIE_HEADER_UTS;
   const trie = new Int32Array(Math.max(minSize, size));
   trie[TRIE_SIZE_IDX] = minSize;
   trie[TRIE_ID_IDX] = id;
@@ -142,12 +142,12 @@ function mergeLeft(tries, at, bt, mergeFn) {
       }
       ai += TRIE_NODE_CHILDREN_IDX;
       bi += TRIE_NODE_CHILDREN_IDX;
-      const bn = bi + TRIE_TAIL_NODE_CHILDREN_LEN;
+      const bn = bi + TRIE_TAIL_NODE_CHILDREN_UTS;
       while (bi < bn) {
         let ri = tries[bt2][bi + TRIE_CHILD_IDX_IDX];
         if (ri === TRIE_NULL) {
-          ai += TRIE_CHILD_LEN;
-          bi += TRIE_CHILD_LEN;
+          ai += TRIE_CHILD_UTS;
+          bi += TRIE_CHILD_UTS;
           continue;
         }
         const rt = tries[bt2][ri + TRIE_NODE_ID_IDX];
@@ -157,10 +157,10 @@ function mergeLeft(tries, at, bt, mergeFn) {
         let li = tries[at2][ai + TRIE_CHILD_IDX_IDX];
         if (li === TRIE_NULL) {
           li = tries[at2][TRIE_SIZE_IDX];
-          if (li + TRIE_RED_LEN > tries[at2].length) {
-            tries[at2] = grow(tries[at2], li + TRIE_RED_LEN);
+          if (li + TRIE_RED_UTS > tries[at2].length) {
+            tries[at2] = grow(tries[at2], li + TRIE_RED_UTS);
           }
-          tries[at2][TRIE_SIZE_IDX] += TRIE_RED_LEN;
+          tries[at2][TRIE_SIZE_IDX] += TRIE_RED_UTS;
           tries[at2][li + TRIE_RED_ID_IDX] = rt;
           tries[at2][li + TRIE_RED_VALUE_IDX_IDX] = ri;
         } else {
@@ -170,8 +170,8 @@ function mergeLeft(tries, at, bt, mergeFn) {
           }
           queue.push([lt, li, rt, ri]);
         }
-        ai += TRIE_CHILD_LEN;
-        bi += TRIE_CHILD_LEN;
+        ai += TRIE_CHILD_UTS;
+        bi += TRIE_CHILD_UTS;
       }
     }
     queue.splice(0, Q);
@@ -184,12 +184,12 @@ function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
   let tail = false;
   do {
     let [trieI, childKey, childPtr] = stack[top];
-    if (childKey >= TRIE_TAIL_NODE_CHILDREN_NUM) {
+    if (childKey >= TRIE_TAIL_NODE_CHILDREN_LEN) {
       --top;
       continue;
     }
     ++stack[top][1];
-    stack[top][2] += TRIE_CHILD_LEN;
+    stack[top][2] += TRIE_CHILD_UTS;
     if (childKey === 0) {
       const nodeIndex = childPtr - TRIE_NODE_CHILDREN_IDX;
       const valueIndex = tries[trieI][nodeIndex + TRIE_NODE_VALUE_IDX_IDX];
