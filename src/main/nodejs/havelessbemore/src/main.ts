@@ -36,13 +36,15 @@ export async function run(
 
   // Initialize data
   const numVals = MAX_STATIONS * maxWorkers + 1;
-  let bpe = Uint32Array.BYTES_PER_ELEMENT;
-  const counts = new Uint32Array(new SharedArrayBuffer(bpe * numVals));
-  bpe = Int16Array.BYTES_PER_ELEMENT;
-  const maxes = new Int16Array(new SharedArrayBuffer(bpe * numVals));
-  const mins = new Int16Array(new SharedArrayBuffer(bpe * numVals));
-  bpe = Float64Array.BYTES_PER_ELEMENT;
-  const sums = new Float64Array(new SharedArrayBuffer(bpe * numVals));
+  const counts = new Uint32Array(
+    new SharedArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * numVals),
+  );
+  const minmaxes = new Int16Array(
+    new SharedArrayBuffer(2 * Int16Array.BYTES_PER_ELEMENT * numVals),
+  );
+  const sums = new Float64Array(
+    new SharedArrayBuffer(Float64Array.BYTES_PER_ELEMENT * numVals),
+  );
   const tries: Int32Array[] = new Array(maxWorkers);
 
   // Create workers
@@ -76,8 +78,7 @@ export async function run(
         end,
         filePath,
         id,
-        maxes,
-        mins,
+        minmaxes,
         start,
         sums,
       } as WorkerRequest);
@@ -112,9 +113,11 @@ export async function run(
 
   function mergeStations(ai: number, bi: number): void {
     counts[ai] += counts[bi];
-    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
-    mins[ai] = Math.min(mins[ai], mins[bi]);
     sums[ai] += sums[bi];
+    ai <<= 1;
+    bi <<= 1;
+    minmaxes[ai] = Math.min(minmaxes[ai], minmaxes[bi]);
+    minmaxes[ai + 1] = Math.max(minmaxes[ai + 1], minmaxes[bi + 1]);
   }
 
   function printStation(
@@ -124,12 +127,13 @@ export async function run(
     vi: number,
   ): void {
     const avg = Math.round(sums[vi] / counts[vi]);
+    vi <<= 1;
     stream.write(name.toString("utf8", 0, nameLen));
     stream.write("=");
-    stream.write((mins[vi] / 10).toFixed(1));
+    stream.write((minmaxes[vi] / 10).toFixed(1));
     stream.write("/");
     stream.write((avg / 10).toFixed(1));
     stream.write("/");
-    stream.write((maxes[vi] / 10).toFixed(1));
+    stream.write((minmaxes[vi + 1] / 10).toFixed(1));
   }
 }

@@ -19,8 +19,7 @@ export async function run({
   start,
   // Shared memory
   counts,
-  maxes,
-  mins,
+  minmaxes,
   sums,
 }: WorkerRequest): Promise<WorkerResponse> {
   // Check chunk size
@@ -75,16 +74,19 @@ export async function run({
 
   function newStation(index: number, temp: number): void {
     counts[index] = 1;
-    maxes[index] = temp;
-    mins[index] = temp;
     sums[index] = temp;
+    index <<= 1;
+    minmaxes[index] = temp;
+    minmaxes[index + 1] = temp;
   }
 
   function updateStation(index: number, temp: number): void {
     ++counts[index];
-    maxes[index] = maxes[index] >= temp ? maxes[index] : temp;
-    mins[index] = mins[index] <= temp ? mins[index] : temp;
     sums[index] += temp;
+    index <<= 1;
+    minmaxes[index] = minmaxes[index] <= temp ? minmaxes[index] : temp;
+    ++index;
+    minmaxes[index] = minmaxes[index] >= temp ? minmaxes[index] : temp;
   }
 
   return { id, trie };
@@ -92,7 +94,8 @@ export async function run({
 
 export function parseDouble(b: Buffer, min: number, max: number): number {
   if (b[min] === CHAR_MINUS) {
-    return ++min + 4 > max
+    ++min;
+    return min + 4 > max
       ? -(10 * b[min] + b[min + 2] - CHAR_ZERO_11)
       : -(100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111);
   }
