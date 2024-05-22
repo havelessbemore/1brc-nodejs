@@ -16,9 +16,9 @@ import {
   TRIE_RED_MEM,
   TRIE_RED_VALUE_IDX_IDX,
   TRIE_RED_ID_IDX,
-  TRIE_TAIL_NODE_CHILDREN_LEN,
-  TRIE_TAIL_NODE_CHILDREN_MEM,
-  TRIE_TAIL_NODE_MEM,
+  TRIE_NODE_MEM,
+  TRIE_NODE_CHILDREN_MEM,
+  TRIE_NODE_CHILDREN_LEN,
 } from "../constants/utf8Trie";
 import { UTF8_B0_MIN } from "../constants/utf8";
 
@@ -36,10 +36,10 @@ export function add(
     if (child === TRIE_NULL) {
       // Allocate new node
       child = trie[TRIE_SIZE_IDX];
-      if (child + TRIE_TAIL_NODE_MEM > trie.length) {
-        trie = grow(trie, child + TRIE_TAIL_NODE_MEM);
+      if (child + TRIE_NODE_MEM > trie.length) {
+        trie = grow(trie, child + TRIE_NODE_MEM);
       }
-      trie[TRIE_SIZE_IDX] += TRIE_TAIL_NODE_MEM;
+      trie[TRIE_SIZE_IDX] += TRIE_NODE_MEM;
       // Attach and initialize node
       trie[index + TRIE_CHILD_IDX_IDX] = child;
       trie[child + TRIE_NODE_ID_IDX] = trie[TRIE_ID_IDX];
@@ -59,7 +59,6 @@ export function createTrie(id = 0, size = MIN_TRIE_SIZE): Int32Array {
 }
 
 export function grow(trie: Int32Array, minSize = 0): Int32Array {
-  console.log("D");
   const length = trie[TRIE_SIZE_IDX];
   minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
   const next = new Int32Array(minSize);
@@ -101,7 +100,7 @@ export function mergeLeft(
       bi += TRIE_NODE_CHILDREN_IDX;
 
       // Traverse right children
-      const bn = bi + TRIE_TAIL_NODE_CHILDREN_MEM;
+      const bn = bi + TRIE_NODE_CHILDREN_MEM;
       while (bi < bn) {
         // If right child is null
         let ri = tries[bt][bi + TRIE_CHILD_IDX_IDX];
@@ -163,50 +162,49 @@ export function print(
   ) => void,
 ): void {
   const stack: [number, number, number][] = new Array(key.length + 1);
-  stack[0] = [trieIndex, 0, TRIE_ROOT_IDX + TRIE_NODE_CHILDREN_IDX];
+  stack[0] = [trieIndex, TRIE_ROOT_IDX + TRIE_NODE_CHILDREN_IDX, 0];
 
   let top = 0;
   let tail = false;
   do {
-    let [trieI, childKey, childPtr] = stack[top];
+    let [trieI, childPtr, numChild] = stack[top];
 
     // Check if end of children array
-    if (childKey >= TRIE_TAIL_NODE_CHILDREN_LEN) {
+    if (numChild >= TRIE_NODE_CHILDREN_LEN) {
       --top;
       continue;
     }
 
     // Update stack top
-    ++stack[top][1];
-    stack[top][2] += TRIE_CHILD_MEM;
-
-    // If just reached node
-    if (childKey === 0) {
-      // Check if the node has a value
-      const nodeIndex = childPtr - TRIE_NODE_CHILDREN_IDX;
-      const valueIndex = tries[trieI][nodeIndex + TRIE_NODE_VALUE_IDX_IDX];
-      if (valueIndex !== TRIE_NULL) {
-        // Print the node's value
-        if (tail) {
-          stream.write(separator);
-        }
-        tail = true;
-        callbackFn(stream, key, top, valueIndex);
-      }
-    }
+    stack[top][1] += TRIE_CHILD_MEM;
+    ++stack[top][2];
 
     // Check if child exists
     let childI = tries[trieI][childPtr + TRIE_CHILD_IDX_IDX];
-    if (childI !== TRIE_NULL) {
-      // Resolve child if redirect
-      const childTrieI = tries[trieI][childI + TRIE_NODE_ID_IDX];
-      if (trieI !== childTrieI) {
-        childI = tries[trieI][childI + TRIE_RED_VALUE_IDX_IDX];
-        trieI = childTrieI;
+    if (childI === TRIE_NULL) {
+      continue;
+    }
+
+    // Resolve redirect, if any
+    const childTrieI = tries[trieI][childI + TRIE_NODE_ID_IDX];
+    if (trieI !== childTrieI) {
+      childI = tries[trieI][childI + TRIE_RED_VALUE_IDX_IDX];
+      trieI = childTrieI;
+    }
+
+    // Add the child to the stack
+    key[top] = numChild + UTF8_B0_MIN;
+    stack[++top] = [trieI, childI + TRIE_NODE_CHILDREN_IDX, 0];
+
+    // Print value, if any
+    const valueIndex = tries[trieI][childI + TRIE_NODE_VALUE_IDX_IDX];
+    if (valueIndex !== TRIE_NULL) {
+      // Print separator if not first value
+      if (tail) {
+        stream.write(separator);
       }
-      // Add the child to the stack
-      key[top] = childKey + UTF8_B0_MIN;
-      stack[++top] = [trieI, 0, childI + TRIE_NODE_CHILDREN_IDX];
+      tail = true;
+      callbackFn(stream, key, top, valueIndex);
     }
   } while (top >= 0);
 }
