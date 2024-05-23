@@ -13,7 +13,12 @@ function bundle(config: RollupOptions): RollupOptions {
 
 export default [
   bundle({
-    plugins: [esbuild({ target: "ES2022" })],
+    plugins: [
+      esbuild({
+        target: "ES2022",
+        minify: true,
+      }),
+    ],
     output: [
       {
         file: pkg.main,
