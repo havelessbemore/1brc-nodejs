@@ -1,6 +1,8 @@
 import { WriteStream, createWriteStream } from "node:fs";
 import { Worker } from "node:worker_threads";
 
+import type { MergeRequest } from "./types/mergeRequest";
+import type { MergeResponse } from "./types/mergeResponse";
 import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
@@ -13,8 +15,6 @@ import { CHUNK_SIZE_MIN, HIGH_WATER_MARK_OUT } from "./constants/stream";
 import { MAX_WORKERS, MIN_WORKERS } from "./constants/workers";
 import { clamp, getFileChunks } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
-import { MergeResponse } from "./types/mergeResponse";
-import { MergeRequest } from "./types/mergeRequest";
 import { createWorker, exec } from "./utils/worker";
 
 export async function run(
@@ -88,7 +88,9 @@ export async function run(
         }),
       )
       .then((res) => {
-        tries[res.id] = res.trie;
+        for (const id of res.ids) {
+          tries[id] = res.tries[id];
+        }
       });
   }
 

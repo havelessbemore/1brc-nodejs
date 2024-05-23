@@ -33,20 +33,47 @@ export function add(
     index += TRIE_NODE_CHILDREN_IDX + TRIE_PTR_MEM * (key[min++] - UTF8_B0_MIN);
     let child = trie[index + TRIE_PTR_IDX_IDX];
     if (child === TRIE_NULL) {
-      // Allocate new node
+      // Allocate node
       child = trie[TRIE_SIZE_IDX];
       if (child + TRIE_NODE_MEM > trie.length) {
         trie = grow(trie, child + TRIE_NODE_MEM);
       }
       trie[TRIE_SIZE_IDX] += TRIE_NODE_MEM;
-      // Attach and initialize node
+      // Attach node
       trie[index + TRIE_PTR_IDX_IDX] = child;
+      // Initialize node
       trie[child + TRIE_NODE_ID_IDX] = trie[TRIE_ID_IDX];
     }
     index = child;
   }
 
   return [trie, index];
+}
+
+export function get(
+  tries: Int32Array[],
+  trie: number,
+  key: ArrayLike<number>,
+  min: number,
+  max: number,
+): number | undefined {
+  let node = TRIE_ROOT_IDX;
+  while (min < max) {
+    const ptr =
+      node + TRIE_NODE_CHILDREN_IDX + TRIE_PTR_MEM * (key[min++] - UTF8_B0_MIN);
+    let child = tries[trie][ptr + TRIE_PTR_IDX_IDX];
+    if (child === TRIE_NULL) {
+      return undefined;
+    }
+    // Resolve redirect, if any
+    const childTrie = tries[trie][child + TRIE_NODE_ID_IDX];
+    if (childTrie !== trie) {
+      child = tries[trie][child + TRIE_XPTR_IDX_IDX];
+      trie = childTrie;
+    }
+    node = child;
+  }
+  return node;
 }
 
 export function createTrie(id = 0, size = TRIE_DEFAULT_SIZE): Int32Array {
@@ -72,7 +99,8 @@ export function mergeLeft(
   at: number,
   bt: number,
   mergeFn: (ai: number, bi: number) => void,
-): void {
+): number[] {
+  const grown = new Set<number>();
   const queue: [number, number, number, number][] = [
     [at, TRIE_ROOT_IDX, bt, TRIE_ROOT_IDX],
   ];
@@ -104,39 +132,37 @@ export function mergeLeft(
       while (bi < bn) {
         // If right child is null
         let ri = tries[bt][bi + TRIE_PTR_IDX_IDX];
-        if (ri === TRIE_NULL) {
-          // Move to next children
-          ai += TRIE_PTR_MEM;
-          bi += TRIE_PTR_MEM;
-          continue;
-        }
-
-        // Resolve right child if redirect
-        const rt = tries[bt][ri + TRIE_NODE_ID_IDX];
-        if (bt !== rt) {
-          ri = tries[bt][ri + TRIE_XPTR_IDX_IDX];
-        }
-
-        // If left child is null
-        let li = tries[at][ai + TRIE_PTR_IDX_IDX];
-        if (li === TRIE_NULL) {
-          // Allocate new redirect in left trie
-          li = tries[at][TRIE_SIZE_IDX];
-          if (li + TRIE_XPTR_MEM > tries[at].length) {
-            tries[at] = grow(tries[at], li + TRIE_XPTR_MEM);
+        if (ri !== TRIE_NULL) {
+          // Resolve right child if redirect
+          const rt = tries[bt][ri + TRIE_NODE_ID_IDX];
+          if (bt !== rt) {
+            ri = tries[bt][ri + TRIE_XPTR_IDX_IDX];
           }
-          tries[at][TRIE_SIZE_IDX] += TRIE_XPTR_MEM;
-          // Add new redirect
-          tries[at][li + TRIE_XPTR_ID_IDX] = rt;
-          tries[at][li + TRIE_XPTR_IDX_IDX] = ri;
-        } else {
-          // Resolve left child if redirect
-          const lt = tries[at][li + TRIE_NODE_ID_IDX];
-          if (at !== lt) {
-            ai = tries[at][li + TRIE_XPTR_IDX_IDX];
+
+          // If left child is null
+          let li = tries[at][ai + TRIE_PTR_IDX_IDX];
+          if (li === TRIE_NULL) {
+            // Allocate redirect
+            li = tries[at][TRIE_SIZE_IDX];
+            if (li + TRIE_XPTR_MEM > tries[at].length) {
+              tries[at] = grow(tries[at], li + TRIE_XPTR_MEM);
+              grown.add(at);
+            }
+            tries[at][TRIE_SIZE_IDX] += TRIE_XPTR_MEM;
+            // Attach redirect
+            tries[at][ai + TRIE_PTR_IDX_IDX] = li;
+            // Initialize redirect
+            tries[at][li + TRIE_XPTR_ID_IDX] = rt;
+            tries[at][li + TRIE_XPTR_IDX_IDX] = ri;
+          } else {
+            // Resolve left child if redirect
+            const lt = tries[at][li + TRIE_NODE_ID_IDX];
+            if (at !== lt) {
+              li = tries[at][li + TRIE_XPTR_IDX_IDX];
+            }
+            // Merge children
+            queue.push([lt, li, rt, ri]);
           }
-          // Merge children
-          queue.push([lt, li, rt, ri]);
         }
 
         // Move to next children
@@ -146,6 +172,7 @@ export function mergeLeft(
     }
     queue.splice(0, Q);
   } while (queue.length > 0);
+  return Array.from(grown);
 }
 
 export function print(

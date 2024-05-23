@@ -114,7 +114,6 @@ export function merge({
   mins,
   sums,
 }: MergeRequest): MergeResponse {
-  mergeLeft(tries, a, b, mergeStations);
   function mergeStations(ai: number, bi: number): void {
     ai <<= 3;
     bi <<= 3;
@@ -123,5 +122,6 @@ export function merge({
     counts[ai >> 1] += counts[bi >> 1];
     sums[ai >> 2] += sums[bi >> 2];
   }
-  return { type: "merge_response", id: a, trie: tries[a] };
+  const ids = mergeLeft(tries, a, b, mergeStations);
+  return { type: "merge_response", ids, tries };
 }
