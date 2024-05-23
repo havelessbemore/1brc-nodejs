@@ -105,7 +105,15 @@ export function parseDouble(b: Buffer, min: number, max: number): number {
     : 100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111;
 }
 
-export function merge({a, b, tries, counts, maxes, mins, sums}: MergeRequest): MergeResponse {
+export function merge({
+  a,
+  b,
+  tries,
+  counts,
+  maxes,
+  mins,
+  sums,
+}: MergeRequest): MergeResponse {
   mergeLeft(tries, a, b, mergeStations);
   function mergeStations(ai: number, bi: number): void {
     ai <<= 3;
