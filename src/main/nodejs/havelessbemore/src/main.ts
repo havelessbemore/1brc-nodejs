@@ -43,7 +43,7 @@ export async function run(
   const maxes = new Int16Array(valBuf, 2);
   const counts = new Uint32Array(valBuf, 4);
   const sums = new Float64Array(valBuf, 8);
-  const tries: Int32Array[] = new Array(maxWorkers);
+  const tries = new Array<Int32Array>(maxWorkers);
 
   // Create workers
   const workers = new Array<Worker>(maxWorkers);

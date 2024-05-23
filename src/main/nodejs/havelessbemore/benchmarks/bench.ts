@@ -48,11 +48,11 @@ await rm(dir, { recursive: true, force: true });
 // REPORTING
 function toRecord(task: Task): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  out["Name"] = task.name;
+  out.Name = task.name;
   out["Min (s)"] = toSeconds(task.result?.min);
   out["Max (s)"] = toSeconds(task.result?.max);
   out["Avg (s)"] = toSeconds(task.result?.mean);
-  out["Samples"] = +(task.result?.samples ?? []).length;
+  out.Samples = +(task.result?.samples ?? []).length;
   return out;
 }
 

@@ -23,7 +23,7 @@
     "bench": "tsx ./benchmarks/bench.ts ../../../../measurements.txt",
     "build": "rimraf dist && tsc && rollup -c --configPlugin typescript",
     "format": "prettier . --write",
-    "lint": "eslint"
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.6",

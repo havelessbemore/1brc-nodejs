@@ -80,6 +80,7 @@ export function mergeLeft(
   do {
     const Q = queue.length;
     for (let q = 0; q < Q; ++q) {
+      // eslint-disable-next-line prefer-const
       let [at, ai, bt, bi] = queue[q];
 
       // If right value is not null
@@ -160,12 +161,13 @@ export function print(
     valueIndex: number,
   ) => void,
 ): void {
-  const stack: [number, number, number][] = new Array(key.length + 1);
+  const stack = new Array<[number, number, number]>(key.length + 1);
   stack[0] = [trieIndex, TRIE_ROOT_IDX + TRIE_NODE_CHILDREN_IDX, 0];
 
   let top = 0;
   let tail = false;
   do {
+    // eslint-disable-next-line prefer-const
     let [trieI, childPtr, numChild] = stack[top];
 
     // Check if end of children array
