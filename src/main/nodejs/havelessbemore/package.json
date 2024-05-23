@@ -1,4 +1,9 @@
 {
+  "description": "Submission for the One Billion Row Challenge",
+  "license": "MIT",
+  "author": "Michael Rojas <dev.michael.rojas@gmail.com> (https://github.com/havelessbemore)",
+  "homepage": "https://github.com/havelessbemore/1brc-nodejs",
+  "bugs": "https://github.com/havelessbemore/1brc-nodejs/issues",
   "sideEffects": false,
   "engines": {
     "node": ">= 18"
@@ -30,6 +35,7 @@
     "rimraf": "^5.0.7",
     "rollup": "^4.17.2",
     "rollup-plugin-esbuild": "^6.1.1",
+    "rollup-plugin-license": "^3.4.0",
     "tinybench": "^2.8.0",
     "tslib": "^2.6.2",
     "tsx": "^4.10.5",
