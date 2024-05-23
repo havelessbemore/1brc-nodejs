@@ -1,8 +1,8 @@
 import { UTF8_BYTE_SPAN } from "./utf8";
 
 // Configurable constants.
-// 
-// Controls trie behavior such as the default 
+//
+// Controls trie behavior such as the default
 // allocated size and the growth factor when resizing.
 
 /**

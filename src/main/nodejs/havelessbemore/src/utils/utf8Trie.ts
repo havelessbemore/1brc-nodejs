@@ -30,7 +30,8 @@ export function add(
 ): [Int32Array, number] {
   let index = TRIE_ROOT_IDX;
   while (min < max) {
-    index += TRIE_NODE_CHILDREN_IDX + TRIE_PTR_MEM * (key[min++] - UTF8_BYTE_MIN);
+    index +=
+      TRIE_NODE_CHILDREN_IDX + TRIE_PTR_MEM * (key[min++] - UTF8_BYTE_MIN);
     let child = trie[index + TRIE_PTR_IDX_IDX];
     if (child === TRIE_NULL) {
       // Allocate node
@@ -60,7 +61,9 @@ export function get(
   let node = TRIE_ROOT_IDX;
   while (min < max) {
     const ptr =
-      node + TRIE_NODE_CHILDREN_IDX + TRIE_PTR_MEM * (key[min++] - UTF8_BYTE_MIN);
+      node +
+      TRIE_NODE_CHILDREN_IDX +
+      TRIE_PTR_MEM * (key[min++] - UTF8_BYTE_MIN);
     let child = tries[trie][ptr + TRIE_PTR_IDX_IDX];
     if (child === TRIE_NULL) {
       return undefined;
