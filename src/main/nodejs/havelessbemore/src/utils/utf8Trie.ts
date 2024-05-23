@@ -50,9 +50,9 @@ export function add(
 }
 
 export function createTrie(id = 0, size = TRIE_DEFAULT_SIZE): Int32Array {
-  const minSize = TRIE_MEM;
-  const trie = new Int32Array(Math.max(minSize, size));
-  trie[TRIE_SIZE_IDX] = minSize;
+  size = Math.max(TRIE_MEM, size);
+  const trie = new Int32Array(new SharedArrayBuffer(size << 2));
+  trie[TRIE_SIZE_IDX] = TRIE_MEM;
   trie[TRIE_ID_IDX] = id;
   return trie;
 }
@@ -60,7 +60,7 @@ export function createTrie(id = 0, size = TRIE_DEFAULT_SIZE): Int32Array {
 export function grow(trie: Int32Array, minSize = 0): Int32Array {
   const length = trie[TRIE_SIZE_IDX];
   minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
-  const next = new Int32Array(minSize);
+  const next = new Int32Array(new SharedArrayBuffer(minSize << 2));
   for (let i = 0; i < length; ++i) {
     next[i] = trie[i];
   }

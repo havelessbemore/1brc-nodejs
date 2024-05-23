@@ -1,8 +1,8 @@
 import { WriteStream, createWriteStream } from "node:fs";
 import { Worker } from "node:worker_threads";
 
-import type { WorkerRequest } from "./types/workerRequest";
-import type { WorkerResponse } from "./types/workerResponse";
+import type { ProcessRequest } from "./types/processRequest";
+import type { ProcessResponse } from "./types/processResponse";
 
 import {
   ENTRY_MAX_LEN,
@@ -12,7 +12,9 @@ import {
 import { CHUNK_SIZE_MIN, HIGH_WATER_MARK_OUT } from "./constants/stream";
 import { MAX_WORKERS, MIN_WORKERS } from "./constants/workers";
 import { clamp, getFileChunks } from "./utils/stream";
-import { mergeLeft, print } from "./utils/utf8Trie";
+import { print } from "./utils/utf8Trie";
+import { MergeResponse } from "./types/mergeResponse";
+import { MergeRequest } from "./types/mergeRequest";
 
 export async function run(
   filePath: string,
@@ -61,7 +63,7 @@ export async function run(
   }
 
   // Process each chunk
-  const tasks = new Array<Promise<WorkerResponse>>(maxWorkers);
+  const tasks = new Array<Promise<ProcessResponse>>(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
     const id = i;
     const worker = workers[i];
@@ -69,6 +71,7 @@ export async function run(
     tasks[i] = new Promise((resolve) => {
       worker.once("message", resolve);
       worker.postMessage({
+        type: "process_request",
         counts,
         end,
         filePath,
@@ -77,7 +80,7 @@ export async function run(
         mins,
         start,
         sums,
-      } as WorkerRequest);
+      } as ProcessRequest);
     });
   }
 
@@ -86,14 +89,35 @@ export async function run(
     tries[res.id] = res.trie;
   }
 
+  // Merge tries
+  for (let i = 0, j = maxWorkers - 1; i < j; i = 0) {
+    const merges: Promise<MergeResponse>[] = [];
+    for (; i < j; ++i) {
+      const a = i;
+      const b = j--;
+      const worker = workers[i];
+      merges.push(new Promise((resolve) => {
+        worker.once("message", resolve);
+        worker.postMessage({
+          type: "merge_request",
+          a,
+          b,
+          counts,
+          maxes,
+          mins,
+          sums,
+          tries,
+        } as MergeRequest);
+      }));
+    }
+    for await (const res of merges) {
+      tries[res.id] = res.trie;
+    }
+  }
+
   // Terminate workers
   for (let i = 0; i < maxWorkers; ++i) {
     await workers[i].terminate();
-  }
-
-  // Merge tries
-  for (let i = 1; i < maxWorkers; ++i) {
-    mergeLeft(tries, 0, i, mergeStations);
   }
 
   // Print results
@@ -106,15 +130,6 @@ export async function run(
   out.write("{");
   print(tries, buffer, 0, out, ", ", printStation);
   out.end("}\n");
-
-  function mergeStations(ai: number, bi: number): void {
-    ai <<= 3;
-    bi <<= 3;
-    mins[ai] = Math.min(mins[ai], mins[bi]);
-    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
-    counts[ai >> 1] += counts[bi >> 1];
-    sums[ai >> 2] += sums[bi >> 2];
-  }
 
   function printStation(
     stream: WriteStream,

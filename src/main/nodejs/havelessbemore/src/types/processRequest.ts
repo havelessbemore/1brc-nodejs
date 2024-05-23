@@ -1,4 +1,7 @@
-export interface WorkerRequest {
+import { Message } from "./message";
+
+export interface ProcessRequest extends Message {
+  type: "process_request";
   end: number;
   filePath: string;
   id: number;

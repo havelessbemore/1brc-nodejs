@@ -1,7 +1,7 @@
 import { createReadStream } from "node:fs";
 
-import type { WorkerRequest } from "./types/workerRequest";
-import type { WorkerResponse } from "./types/workerResponse";
+import type { ProcessRequest } from "./types/processRequest";
+import type { ProcessResponse } from "./types/processResponse";
 
 import { CHAR_SEMICOLON } from "./constants/utf8";
 import { CHAR_NEWLINE } from "./constants/utf8";
@@ -10,7 +10,9 @@ import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
 import { CHAR_ZERO_11, CHAR_ZERO_111 } from "./constants/stream";
 import { TRIE_NODE_VALUE_IDX, TRIE_NULL } from "./constants/utf8Trie";
 import { getHighWaterMark } from "./utils/stream";
-import { add, createTrie } from "./utils/utf8Trie";
+import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
+import { MergeRequest } from "./types/mergeRequest";
+import { MergeResponse } from "./types/mergeResponse";
 
 export async function run({
   end,
@@ -22,10 +24,10 @@ export async function run({
   maxes,
   mins,
   sums,
-}: WorkerRequest): Promise<WorkerResponse> {
+}: ProcessRequest): Promise<ProcessResponse> {
   // Check chunk size
   if (start >= end) {
-    return { id, trie: createTrie(id, 0) };
+    return { type: "process_response", id, trie: createTrie(id, 0) };
   }
 
   // Initialize constants
@@ -88,7 +90,7 @@ export async function run({
     sums[index >> 2] += temp;
   }
 
-  return { id, trie };
+  return { type: "process_response", id, trie };
 }
 
 export function parseDouble(b: Buffer, min: number, max: number): number {
@@ -101,4 +103,17 @@ export function parseDouble(b: Buffer, min: number, max: number): number {
   return min + 4 > max
     ? 10 * b[min] + b[min + 2] - CHAR_ZERO_11
     : 100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111;
+}
+
+export function merge({a, b, tries, counts, maxes, mins, sums}: MergeRequest): MergeResponse {
+  mergeLeft(tries, a, b, mergeStations);
+  function mergeStations(ai: number, bi: number): void {
+    ai <<= 3;
+    bi <<= 3;
+    mins[ai] = Math.min(mins[ai], mins[bi]);
+    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    counts[ai >> 1] += counts[bi >> 1];
+    sums[ai >> 2] += sums[bi >> 2];
+  }
+  return { type: "merge_response", id: a, trie: tries[a] };
 }

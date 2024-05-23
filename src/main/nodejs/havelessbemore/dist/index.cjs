@@ -110,16 +110,18 @@ function add(trie, key, min, max) {
   return [trie, index];
 }
 function createTrie(id = 0, size = TRIE_DEFAULT_SIZE) {
-  const minSize = TRIE_MEM;
-  const trie = new Int32Array(Math.max(minSize, size));
-  trie[TRIE_SIZE_IDX] = minSize;
+  size = Math.max(TRIE_MEM, size);
+  const buffer = new SharedArrayBuffer(size << 2);
+  const trie = new Int32Array(buffer);
+  trie[TRIE_SIZE_IDX] = TRIE_MEM;
   trie[TRIE_ID_IDX] = id;
   return trie;
 }
 function grow(trie, minSize = 0) {
   const length = trie[TRIE_SIZE_IDX];
   minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
-  const next = new Int32Array(minSize);
+  const buffer = new SharedArrayBuffer(minSize << 2);
+  const next = new Int32Array(buffer);
   for (let i = 0; i < length; ++i) {
     next[i] = trie[i];
   }
@@ -253,6 +255,7 @@ async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
     tasks[i] = new Promise((resolve) => {
       worker.once("message", resolve);
       worker.postMessage({
+        type: "process_request",
         counts,
         end,
         filePath,
@@ -267,11 +270,32 @@ async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
   for await (const res of tasks) {
     tries[res.id] = res.trie;
   }
+  for (let i = 0, j = maxWorkers - 1; i < j; i = 0) {
+    const merges = [];
+    for (; i < j; ++i) {
+      const a = i;
+      const b = j--;
+      const worker = workers[i];
+      merges.push(new Promise((resolve) => {
+        worker.once("message", resolve);
+        worker.postMessage({
+          type: "merge_request",
+          a,
+          b,
+          counts,
+          maxes,
+          mins,
+          sums,
+          tries
+        });
+      }));
+    }
+    for await (const res of merges) {
+      tries[res.id] = res.trie;
+    }
+  }
   for (let i = 0; i < maxWorkers; ++i) {
     await workers[i].terminate();
-  }
-  for (let i = 1; i < maxWorkers; ++i) {
-    mergeLeft(tries, 0, i, mergeStations);
   }
   const out = node_fs.createWriteStream(outPath, {
     fd: outPath.length < 1 ? 1 : void 0,
@@ -282,14 +306,6 @@ async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
   out.write("{");
   print(tries, buffer, 0, out, ", ", printStation);
   out.end("}\n");
-  function mergeStations(ai, bi) {
-    ai <<= 3;
-    bi <<= 3;
-    mins[ai] = Math.min(mins[ai], mins[bi]);
-    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
-    counts[ai >> 1] += counts[bi >> 1];
-    sums[ai >> 2] += sums[bi >> 2];
-  }
   function printStation(stream, name, nameLen, vi) {
     const avg = Math.round(sums[vi << 1] / counts[vi << 2]);
     stream.write(name.toString("utf8", 0, nameLen));
@@ -314,7 +330,7 @@ async function run({
   sums
 }) {
   if (start >= end) {
-    return { id, trie: createTrie(id, 0) };
+    return { type: "process_response", id, trie: createTrie(id, 0) };
   }
   let trie = createTrie(id);
   let stations = id * MAX_STATIONS + 1;
@@ -360,7 +376,7 @@ async function run({
     ++counts[index >> 1];
     sums[index >> 2] += temp;
   }
-  return { id, trie };
+  return { type: "process_response", id, trie };
 }
 function parseDouble(b, min, max) {
   if (b[min] === CHAR_MINUS) {
@@ -369,14 +385,32 @@ function parseDouble(b, min, max) {
   }
   return min + 4 > max ? 10 * b[min] + b[min + 2] - CHAR_ZERO_11 : 100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111;
 }
+function merge({ a, b, tries, counts, maxes, mins, sums }) {
+  mergeLeft(tries, a, b, mergeStations);
+  function mergeStations(ai, bi) {
+    ai <<= 3;
+    bi <<= 3;
+    mins[ai] = Math.min(mins[ai], mins[bi]);
+    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    counts[ai >> 1] += counts[bi >> 1];
+    sums[ai >> 2] += sums[bi >> 2];
+  }
+  return { type: "merge_response", id: a, trie: tries[a] };
+}
 
 if (node_worker_threads.isMainThread) {
   const workerPath = node_url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
   run$1(process.argv[2], workerPath, node_os.availableParallelism());
 } else {
-  node_worker_threads.parentPort.addListener("message", async (req) => {
-    const res = await run(req);
-    node_worker_threads.parentPort.postMessage(res, [res.trie.buffer]);
+  node_worker_threads.parentPort.addListener("message", async (msg) => {
+    if (msg.type === "process_request") {
+      const res = await run(msg);
+      node_worker_threads.parentPort.postMessage(res);
+    }
+    if (msg.type === "merge_request") {
+      const res = merge(msg);
+      node_worker_threads.parentPort.postMessage(res);
+    }
   });
 }
 //# sourceMappingURL=index.cjs.map
