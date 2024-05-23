@@ -28,21 +28,27 @@ export const CHAR_ZERO = 48; // "0".charCodeAt(0);
 // UTF-8 constants
 
 /**
- * The minimum value of the first byte of a UTF-8 code point.
+ * The minimum value of a UTF-8 byte.
  *
- * Ignores the control code points from U+0000 to U+001F.
+ * Ignores C0 control codes from U+0000 to U+001F.
  *
- * @see {@link https://www.charset.org/utf-8 | UTF-8 Charset}
+ * @see {@link https://en.wikipedia.org/wiki/Unicode_control_characters#Category_%22Cc%22_control_codes_(C0_and_C1) | Control Codes}
  */
-export const UTF8_B0_MIN = 32;
+export const UTF8_BYTE_MIN = 32;
 
 /**
- * The minimum value for noninitial bytes of a UTF-8 code point.
+ * The maximum value of a UTF-8 byte.
  *
  * @see {@link https://en.wikipedia.org/wiki/UTF-8#Encoding | UTF-8 Encoding}
  */
-export const UTF8_BN_MIN = 128;
+export const UTF8_BYTE_MAX = 0b11110111;
 
+/**
+ * The number of possible values in a UTF-8 byte.
+ */
+export const UTF8_BYTE_SPAN = UTF8_BYTE_MAX - UTF8_BYTE_MIN + 1;
+
+/*
 export const UTF8_B0_1B_LEAD = 0b00000000;
 export const UTF8_BN_LEAD = 0b10000000;
 export const UTF8_B0_2B_LEAD = 0b11000000;
@@ -60,11 +66,4 @@ export const UTF8_BN_MAX = 0b10111111;
 export const UTF8_B0_2B_MAX = 0b11011111;
 export const UTF8_B0_3B_MAX = 0b11101111;
 export const UTF8_B0_4B_MAX = 0b11110111;
-export const UTF8_B0_MAX = UTF8_B0_4B_MAX;
-
-export const UTF8_B0_1B_LEN = UTF8_B0_1B_MAX - UTF8_B0_MIN + 1;
-export const UTF8_B0_2B_LEN = UTF8_B0_2B_MAX - UTF8_B0_MIN + 1;
-export const UTF8_B0_3B_LEN = UTF8_B0_3B_MAX - UTF8_B0_MIN + 1;
-export const UTF8_B0_4B_LEN = UTF8_B0_4B_MAX - UTF8_B0_MIN + 1;
-export const UTF8_B0_LEN = UTF8_B0_MAX - UTF8_B0_MIN + 1;
-export const UTF8_BN_LEN = UTF8_BN_MAX - UTF8_BN_MIN + 1;
+*/
