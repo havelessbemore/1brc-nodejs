@@ -14,11 +14,9 @@ if (isMainThread) {
 } else {
   parentPort!.addListener("message", async (msg: Message) => {
     if (msg.type === "process_request") {
-      const res = await runWorker(msg as ProcessRequest);
-      parentPort!.postMessage(res);
+      parentPort!.postMessage(await runWorker(msg as ProcessRequest));
     } else if (msg.type === "merge_request") {
-      const res = merge(msg as MergeRequest);
-      parentPort!.postMessage(res);
+      parentPort!.postMessage(merge(msg as MergeRequest));
     } else {
       throw new Error("Unknown message type");
     }
