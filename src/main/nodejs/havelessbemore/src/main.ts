@@ -15,6 +15,7 @@ import { clamp, getFileChunks } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
 import { MergeResponse } from "./types/mergeResponse";
 import { MergeRequest } from "./types/mergeRequest";
+import { createWorker, exec } from "./utils/worker";
 
 export async function run(
   filePath: string,
@@ -47,58 +48,35 @@ export async function run(
   // Create workers
   const workers = new Array<Worker>(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
-    const worker = new Worker(workerPath);
-    worker.on("error", (err) => {
-      throw err;
-    });
-    worker.on("messageerror", (err) => {
-      throw err;
-    });
-    worker.on("exit", (code) => {
-      if (code > 1 || code < 0) {
-        throw new Error(`Worker ${worker.threadId} exited with code ${code}`);
-      }
-    });
-    workers[i] = worker;
+    workers[i] = createWorker(workerPath);
   }
 
   // Process each chunk
-  const tasks = new Array<Promise<ProcessResponse>>(maxWorkers);
+  const tasks = new Array<Promise<unknown>>(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
-    const id = i;
-    const worker = workers[i];
-    const [start, end] = chunks[i];
-    tasks[i] = new Promise((resolve) => {
-      worker.once("message", resolve);
-      worker.postMessage({
-        type: "process_request",
-        counts,
-        end,
-        filePath,
-        id,
-        maxes,
-        mins,
-        start,
-        sums,
-      } as ProcessRequest);
+    tasks[i] = exec<ProcessRequest, ProcessResponse>(workers[i], {
+      type: "process_request",
+      counts,
+      end: chunks[i][1],
+      filePath,
+      id: i,
+      maxes,
+      mins,
+      start: chunks[i][0],
+      sums,
+    }).then((res) => {
+      tries[res.id] = res.trie;
     });
   }
 
-  // Wait for completion
-  for await (const res of tasks) {
-    tries[res.id] = res.trie;
-  }
-
   // Merge tries
-  for (let i = 0, j = maxWorkers - 1; i < j; i = 0) {
-    const merges: Promise<MergeResponse>[] = [];
-    for (; i < j; ++i) {
-      const a = i;
-      const b = j--;
-      const worker = workers[i];
-      merges.push(new Promise((resolve) => {
-        worker.once("message", resolve);
-        worker.postMessage({
+  for (let i = tasks.length - 1; i > 0; --i) {
+    const a = (i - 1) >> 1;
+    const b = i;
+    tasks[a] = tasks[a]
+      .then(() => tasks[b])
+      .then(() =>
+        exec<MergeRequest, MergeResponse>(workers[a], {
           type: "merge_request",
           a,
           b,
@@ -107,18 +85,20 @@ export async function run(
           mins,
           sums,
           tries,
-        } as MergeRequest);
-      }));
-    }
-    for await (const res of merges) {
-      tries[res.id] = res.trie;
-    }
+        }),
+      )
+      .then((res) => {
+        tries[res.id] = res.trie;
+      });
   }
 
   // Terminate workers
   for (let i = 0; i < maxWorkers; ++i) {
-    await workers[i].terminate();
+    tasks[i] = tasks[i].then(() => workers[i].terminate());
   }
+
+  // Wait for completion
+  await Promise.all(tasks);
 
   // Print results
   const out = createWriteStream(outPath, {
