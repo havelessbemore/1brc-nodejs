@@ -19,7 +19,8 @@ export async function run({
   start,
   // Shared memory
   counts,
-  minmaxes,
+  maxes,
+  mins,
   sums,
 }: WorkerRequest): Promise<WorkerResponse> {
   // Check chunk size
@@ -73,20 +74,18 @@ export async function run({
   }
 
   function newStation(index: number, temp: number): void {
-    counts[index] = 1;
-    sums[index] = temp;
-    index <<= 1;
-    minmaxes[index] = temp;
-    minmaxes[index + 1] = temp;
+    mins[index << 3] = temp;
+    maxes[index << 3] = temp;
+    counts[index << 2] = 1;
+    sums[index << 1] = temp;
   }
 
   function updateStation(index: number, temp: number): void {
-    ++counts[index];
-    sums[index] += temp;
-    index <<= 1;
-    minmaxes[index] = minmaxes[index] <= temp ? minmaxes[index] : temp;
-    ++index;
-    minmaxes[index] = minmaxes[index] >= temp ? minmaxes[index] : temp;
+    index <<= 3;
+    mins[index] = mins[index] <= temp ? mins[index] : temp;
+    maxes[index] = maxes[index] >= temp ? maxes[index] : temp;
+    ++counts[index >> 1];
+    sums[index >> 2] += temp;
   }
 
   return { id, trie };

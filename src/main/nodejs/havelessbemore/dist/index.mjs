@@ -220,16 +220,20 @@ async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
     CHUNK_SIZE_MIN
   );
   maxWorkers = chunks.length;
-  const numVals = MAX_STATIONS * maxWorkers + 1;
-  const counts = new Uint32Array(
-    new SharedArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * numVals)
+  const BPE = (
+    // Count
+    Uint32Array.BYTES_PER_ELEMENT + // Max
+    Int16Array.BYTES_PER_ELEMENT + // Min
+    Int16Array.BYTES_PER_ELEMENT + // Sum
+    Float64Array.BYTES_PER_ELEMENT
   );
-  const minmaxes = new Int16Array(
-    new SharedArrayBuffer(2 * Int16Array.BYTES_PER_ELEMENT * numVals)
+  const valuesBuffer = new SharedArrayBuffer(
+    BPE * (MAX_STATIONS * maxWorkers + 1)
   );
-  const sums = new Float64Array(
-    new SharedArrayBuffer(Float64Array.BYTES_PER_ELEMENT * numVals)
-  );
+  const mins = new Int16Array(valuesBuffer);
+  const maxes = new Int16Array(valuesBuffer, Int16Array.BYTES_PER_ELEMENT);
+  const counts = new Uint32Array(valuesBuffer, Uint32Array.BYTES_PER_ELEMENT);
+  const sums = new Float64Array(valuesBuffer, Float64Array.BYTES_PER_ELEMENT);
   const tries = new Array(maxWorkers);
   const workers = new Array(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
@@ -259,7 +263,8 @@ async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
         end,
         filePath,
         id,
-        minmaxes,
+        maxes,
+        mins,
         start,
         sums
       });
@@ -284,23 +289,22 @@ async function run$1(filePath, workerPath, maxWorkers, outPath = "") {
   print(tries, buffer, 0, out, ", ", printStation);
   out.end("}\n");
   function mergeStations(ai, bi) {
-    counts[ai] += counts[bi];
-    sums[ai] += sums[bi];
-    ai <<= 1;
-    bi <<= 1;
-    minmaxes[ai] = Math.min(minmaxes[ai], minmaxes[bi]);
-    minmaxes[ai + 1] = Math.max(minmaxes[ai + 1], minmaxes[bi + 1]);
+    ai <<= 3;
+    bi <<= 3;
+    mins[ai] = Math.min(mins[ai], mins[bi]);
+    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    counts[ai >> 1] += counts[bi >> 1];
+    sums[ai >> 2] += sums[bi >> 2];
   }
   function printStation(stream, name, nameLen, vi) {
-    const avg = Math.round(sums[vi] / counts[vi]);
-    vi <<= 1;
+    const avg = Math.round(sums[vi << 1] / counts[vi << 2]);
     stream.write(name.toString("utf8", 0, nameLen));
     stream.write("=");
-    stream.write((minmaxes[vi] / 10).toFixed(1));
+    stream.write((mins[vi << 3] / 10).toFixed(1));
     stream.write("/");
     stream.write((avg / 10).toFixed(1));
     stream.write("/");
-    stream.write((minmaxes[vi + 1] / 10).toFixed(1));
+    stream.write((maxes[vi << 3] / 10).toFixed(1));
   }
 }
 
@@ -311,7 +315,8 @@ async function run({
   start,
   // Shared memory
   counts,
-  minmaxes,
+  maxes,
+  mins,
   sums
 }) {
   if (start >= end) {
@@ -349,19 +354,17 @@ async function run({
     }
   }
   function newStation(index, temp) {
-    counts[index] = 1;
-    sums[index] = temp;
-    index <<= 1;
-    minmaxes[index] = temp;
-    minmaxes[index + 1] = temp;
+    mins[index << 3] = temp;
+    maxes[index << 3] = temp;
+    counts[index << 2] = 1;
+    sums[index << 1] = temp;
   }
   function updateStation(index, temp) {
-    ++counts[index];
-    sums[index] += temp;
-    index <<= 1;
-    minmaxes[index] = minmaxes[index] <= temp ? minmaxes[index] : temp;
-    ++index;
-    minmaxes[index] = minmaxes[index] >= temp ? minmaxes[index] : temp;
+    index <<= 3;
+    mins[index] = mins[index] <= temp ? mins[index] : temp;
+    maxes[index] = maxes[index] >= temp ? maxes[index] : temp;
+    ++counts[index >> 1];
+    sums[index >> 2] += temp;
   }
   return { id, trie };
 }

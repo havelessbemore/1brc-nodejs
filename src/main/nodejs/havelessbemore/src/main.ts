@@ -35,16 +35,22 @@ export async function run(
   maxWorkers = chunks.length;
 
   // Initialize data
-  const numVals = MAX_STATIONS * maxWorkers + 1;
-  const counts = new Uint32Array(
-    new SharedArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * numVals),
+  const BPE =
+    // Count
+    Uint32Array.BYTES_PER_ELEMENT +
+    // Max
+    Int16Array.BYTES_PER_ELEMENT +
+    // Min
+    Int16Array.BYTES_PER_ELEMENT +
+    // Sum
+    Float64Array.BYTES_PER_ELEMENT;
+  const valuesBuffer = new SharedArrayBuffer(
+    BPE * (MAX_STATIONS * maxWorkers + 1),
   );
-  const minmaxes = new Int16Array(
-    new SharedArrayBuffer(2 * Int16Array.BYTES_PER_ELEMENT * numVals),
-  );
-  const sums = new Float64Array(
-    new SharedArrayBuffer(Float64Array.BYTES_PER_ELEMENT * numVals),
-  );
+  const mins = new Int16Array(valuesBuffer);
+  const maxes = new Int16Array(valuesBuffer, Int16Array.BYTES_PER_ELEMENT);
+  const counts = new Uint32Array(valuesBuffer, Uint32Array.BYTES_PER_ELEMENT);
+  const sums = new Float64Array(valuesBuffer, Float64Array.BYTES_PER_ELEMENT);
   const tries: Int32Array[] = new Array(maxWorkers);
 
   // Create workers
@@ -78,7 +84,8 @@ export async function run(
         end,
         filePath,
         id,
-        minmaxes,
+        maxes,
+        mins,
         start,
         sums,
       } as WorkerRequest);
@@ -112,12 +119,12 @@ export async function run(
   out.end("}\n");
 
   function mergeStations(ai: number, bi: number): void {
-    counts[ai] += counts[bi];
-    sums[ai] += sums[bi];
-    ai <<= 1;
-    bi <<= 1;
-    minmaxes[ai] = Math.min(minmaxes[ai], minmaxes[bi]);
-    minmaxes[ai + 1] = Math.max(minmaxes[ai + 1], minmaxes[bi + 1]);
+    ai <<= 3;
+    bi <<= 3;
+    mins[ai] = Math.min(mins[ai], mins[bi]);
+    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    counts[ai >> 1] += counts[bi >> 1];
+    sums[ai >> 2] += sums[bi >> 2];
   }
 
   function printStation(
@@ -126,14 +133,13 @@ export async function run(
     nameLen: number,
     vi: number,
   ): void {
-    const avg = Math.round(sums[vi] / counts[vi]);
-    vi <<= 1;
+    const avg = Math.round(sums[vi << 1] / counts[vi << 2]);
     stream.write(name.toString("utf8", 0, nameLen));
     stream.write("=");
-    stream.write((minmaxes[vi] / 10).toFixed(1));
+    stream.write((mins[vi << 3] / 10).toFixed(1));
     stream.write("/");
     stream.write((avg / 10).toFixed(1));
     stream.write("/");
-    stream.write((minmaxes[vi + 1] / 10).toFixed(1));
+    stream.write((maxes[vi << 3] / 10).toFixed(1));
   }
 }

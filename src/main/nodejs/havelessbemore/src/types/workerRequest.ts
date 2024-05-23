@@ -5,6 +5,7 @@ export interface WorkerRequest {
   start: number;
   // Shared memory
   counts: Uint32Array;
-  minmaxes: Int16Array;
+  maxes: Int16Array;
+  mins: Int16Array;
   sums: Float64Array;
 }
