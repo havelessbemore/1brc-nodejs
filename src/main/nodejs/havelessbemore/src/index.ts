@@ -16,10 +16,11 @@ if (isMainThread) {
     if (msg.type === "process_request") {
       const res = await runWorker(msg as ProcessRequest);
       parentPort!.postMessage(res);
-    }
-    if (msg.type === "merge_request") {
+    } else if (msg.type === "merge_request") {
       const res = merge(msg as MergeRequest);
       parentPort!.postMessage(res);
+    } else {
+      throw new Error("Unknown message type");
     }
   });
 }
