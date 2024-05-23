@@ -17,18 +17,18 @@
 - Min: 14.5s
 - Avg: 15s
 
-### Specs:
+#### Specs:
 
 - Machine:
 
-  - MacBook Pro M2
-  - RAM: 8 GB
+  - Model: MacBook Air
+  - Chip: Apple M2
   - Cores: 8 (4 performance + 4 efficiency)
+  - Memory: 8 GB
   - OS: MacOS Sonoma
 
-- Other
+- Other:
   - NodeJS: v20.13.1
-  - Web workers: 8
   - Input file: ~13.8 GB
 
 ## Build
