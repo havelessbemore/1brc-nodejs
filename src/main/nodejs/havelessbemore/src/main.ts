@@ -35,22 +35,11 @@ export async function run(
   maxWorkers = chunks.length;
 
   // Initialize data
-  const BPE =
-    // Count
-    Uint32Array.BYTES_PER_ELEMENT +
-    // Max
-    Int16Array.BYTES_PER_ELEMENT +
-    // Min
-    Int16Array.BYTES_PER_ELEMENT +
-    // Sum
-    Float64Array.BYTES_PER_ELEMENT;
-  const valuesBuffer = new SharedArrayBuffer(
-    BPE * (MAX_STATIONS * maxWorkers + 1),
-  );
-  const mins = new Int16Array(valuesBuffer);
-  const maxes = new Int16Array(valuesBuffer, Int16Array.BYTES_PER_ELEMENT);
-  const counts = new Uint32Array(valuesBuffer, Uint32Array.BYTES_PER_ELEMENT);
-  const sums = new Float64Array(valuesBuffer, Float64Array.BYTES_PER_ELEMENT);
+  const valBuf = new SharedArrayBuffer((MAX_STATIONS * maxWorkers + 1) << 4);
+  const mins = new Int16Array(valBuf);
+  const maxes = new Int16Array(valBuf, 2);
+  const counts = new Uint32Array(valBuf, 4);
+  const sums = new Float64Array(valBuf, 8);
   const tries: Int32Array[] = new Array(maxWorkers);
 
   // Create workers

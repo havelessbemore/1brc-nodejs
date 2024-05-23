@@ -8,7 +8,7 @@ import { CHAR_NEWLINE } from "./constants/utf8";
 import { CHAR_MINUS } from "./constants/utf8";
 import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
 import { CHAR_ZERO_11, CHAR_ZERO_111 } from "./constants/stream";
-import { TRIE_NODE_VALUE_IDX_IDX, TRIE_NULL } from "./constants/utf8Trie";
+import { TRIE_NODE_VALUE_IDX, TRIE_NULL } from "./constants/utf8Trie";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie } from "./utils/utf8Trie";
 
@@ -61,12 +61,12 @@ export async function run({
         // Add the station's name to the trie and get leaf index
         [trie, leaf] = add(trie, buffer, 0, tempI);
         // If the station existed
-        if (trie[leaf + TRIE_NODE_VALUE_IDX_IDX] !== TRIE_NULL) {
+        if (trie[leaf + TRIE_NODE_VALUE_IDX] !== TRIE_NULL) {
           // Update the station's value
-          updateStation(trie[leaf + TRIE_NODE_VALUE_IDX_IDX], tempV);
+          updateStation(trie[leaf + TRIE_NODE_VALUE_IDX], tempV);
         } else {
           // Add the new station's value
-          trie[leaf + TRIE_NODE_VALUE_IDX_IDX] = stations;
+          trie[leaf + TRIE_NODE_VALUE_IDX] = stations;
           newStation(stations++, tempV);
         }
       }
