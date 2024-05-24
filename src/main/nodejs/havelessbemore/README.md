@@ -15,7 +15,7 @@
 ### Results
 
 - Min: 13.9s
-- Avg: 15s
+- Avg: 14.5s
 
 #### Specs:
 
