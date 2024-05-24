@@ -44,33 +44,40 @@ export async function run({
 
   // For each chunk
   let bufI = 0;
-  let tempI = 0;
   let leaf: number;
   for await (const chunk of stream) {
     // For each byte
     const N = chunk.length;
     for (let i = 0; i < N; ++i) {
-      if (chunk[i] === CHAR_SEMICOLON) {
-        // If semicolon
-        tempI = bufI;
-      } else if (chunk[i] !== CHAR_NEWLINE) {
-        // If not newline
+      // If not newline
+      if (chunk[i] !== CHAR_NEWLINE) {
         buffer[bufI++] = chunk[i];
+        continue;
+      }
+
+      // Get semicolon
+      let semI = bufI - 4;
+      if (buffer[semI - 2] === CHAR_SEMICOLON) {
+        semI -= 2;
+      } else if (buffer[semI - 1] === CHAR_SEMICOLON) {
+        semI -= 1;
+      }
+
+      // Get temperature
+      const tempV = parseDouble(buffer, semI + 1, bufI);
+      bufI = 0;
+
+      // Add the station's name to the trie and get leaf index
+      [trie, leaf] = add(trie, buffer, 0, semI);
+
+      // If the station existed
+      if (trie[leaf + TRIE_NODE_VALUE_IDX] !== TRIE_NULL) {
+        // Update the station's value
+        updateStation(trie[leaf + TRIE_NODE_VALUE_IDX], tempV);
       } else {
-        // Get temperature
-        const tempV = parseDouble(buffer, tempI, bufI);
-        bufI = 0;
-        // Add the station's name to the trie and get leaf index
-        [trie, leaf] = add(trie, buffer, 0, tempI);
-        // If the station existed
-        if (trie[leaf + TRIE_NODE_VALUE_IDX] !== TRIE_NULL) {
-          // Update the station's value
-          updateStation(trie[leaf + TRIE_NODE_VALUE_IDX], tempV);
-        } else {
-          // Add the new station's value
-          trie[leaf + TRIE_NODE_VALUE_IDX] = stations;
-          newStation(stations++, tempV);
-        }
+        // Add the new station's value
+        trie[leaf + TRIE_NODE_VALUE_IDX] = stations;
+        newStation(stations++, tempV);
       }
     }
   }
