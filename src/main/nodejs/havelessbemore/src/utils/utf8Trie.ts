@@ -28,8 +28,8 @@ export function add(
   let index = TRIE_ROOT_IDX;
   while (min < max) {
     index +=
-      TRIE_NODE_CHILDREN_IDX + /*TRIE_PTR_MEM * */(key[min++] - UTF8_BYTE_MIN);
-    let child = trie[index/*+ TRIE_PTR_IDX_IDX*/];
+      TRIE_NODE_CHILDREN_IDX + /*TRIE_PTR_MEM * */ (key[min++] - UTF8_BYTE_MIN);
+    let child = trie[index /*+ TRIE_PTR_IDX_IDX*/];
     if (child === TRIE_NULL) {
       // Allocate node
       child = trie[TRIE_SIZE_IDX];
@@ -38,9 +38,9 @@ export function add(
       }
       trie[TRIE_SIZE_IDX] += TRIE_NODE_MEM;
       // Attach node
-      trie[index/*+ TRIE_PTR_IDX_IDX*/] = child;
+      trie[index /*+ TRIE_PTR_IDX_IDX*/] = child;
       // Initialize node
-      trie[child/* + TRIE_NODE_ID_IDX*/] = trie[TRIE_ID_IDX];
+      trie[child /* + TRIE_NODE_ID_IDX*/] = trie[TRIE_ID_IDX];
     }
     index = child;
   }
@@ -60,13 +60,13 @@ export function get(
     const ptr =
       node +
       TRIE_NODE_CHILDREN_IDX +
-      /*TRIE_PTR_MEM * */(key[min++] - UTF8_BYTE_MIN);
-    let child = tries[trie][ptr/* + TRIE_PTR_IDX_IDX*/];
+      /*TRIE_PTR_MEM * */ (key[min++] - UTF8_BYTE_MIN);
+    let child = tries[trie][ptr /* + TRIE_PTR_IDX_IDX*/];
     if (child === TRIE_NULL) {
       return undefined;
     }
     // Resolve redirect, if any
-    const childTrie = tries[trie][child/* + TRIE_NODE_ID_IDX*/];
+    const childTrie = tries[trie][child /* + TRIE_NODE_ID_IDX*/];
     if (childTrie !== trie) {
       child = tries[trie][child + TRIE_XPTR_IDX_IDX];
       trie = childTrie;
@@ -131,16 +131,16 @@ export function mergeLeft(
       const bn = bi + TRIE_NODE_CHILDREN_MEM;
       while (bi < bn) {
         // If right child is null
-        let ri = tries[bt][bi/* + TRIE_PTR_IDX_IDX*/];
+        let ri = tries[bt][bi /* + TRIE_PTR_IDX_IDX*/];
         if (ri !== TRIE_NULL) {
           // Resolve right child if redirect
-          const rt = tries[bt][ri/*+ TRIE_NODE_ID_IDX*/];
+          const rt = tries[bt][ri /*+ TRIE_NODE_ID_IDX*/];
           if (bt !== rt) {
             ri = tries[bt][ri + TRIE_XPTR_IDX_IDX];
           }
 
           // If left child is null
-          let li = tries[at][ai/*+ TRIE_PTR_IDX_IDX*/];
+          let li = tries[at][ai /*+ TRIE_PTR_IDX_IDX*/];
           if (li === TRIE_NULL) {
             // Allocate redirect
             li = tries[at][TRIE_SIZE_IDX];
@@ -150,13 +150,13 @@ export function mergeLeft(
             }
             tries[at][TRIE_SIZE_IDX] += TRIE_XPTR_MEM;
             // Attach redirect
-            tries[at][ai/*+ TRIE_PTR_IDX_IDX*/] = li;
+            tries[at][ai /*+ TRIE_PTR_IDX_IDX*/] = li;
             // Initialize redirect
-            tries[at][li/* + TRIE_XPTR_ID_IDX*/] = rt;
+            tries[at][li /* + TRIE_XPTR_ID_IDX*/] = rt;
             tries[at][li + TRIE_XPTR_IDX_IDX] = ri;
           } else {
             // Resolve left child if redirect
-            const lt = tries[at][li/* + TRIE_NODE_ID_IDX*/];
+            const lt = tries[at][li /* + TRIE_NODE_ID_IDX*/];
             if (at !== lt) {
               li = tries[at][li + TRIE_XPTR_IDX_IDX];
             }
@@ -208,13 +208,13 @@ export function print(
     ++stack[top][2];
 
     // Check if child exists
-    let childI = tries[trieI][childPtr/* + TRIE_PTR_IDX_IDX*/];
+    let childI = tries[trieI][childPtr /* + TRIE_PTR_IDX_IDX*/];
     if (childI === TRIE_NULL) {
       continue;
     }
 
     // Resolve redirect, if any
-    const childTrieI = tries[trieI][childI/* + TRIE_NODE_ID_IDX*/];
+    const childTrieI = tries[trieI][childI /* + TRIE_NODE_ID_IDX*/];
     if (trieI !== childTrieI) {
       childI = tries[trieI][childI + TRIE_XPTR_IDX_IDX];
       trieI = childTrieI;

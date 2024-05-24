@@ -5,14 +5,13 @@ import type { ProcessResponse } from "./types/processResponse";
 
 import { CHAR_SEMICOLON } from "./constants/utf8";
 import { CHAR_NEWLINE } from "./constants/utf8";
-import { CHAR_MINUS } from "./constants/utf8";
 import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
-import { CHAR_ZERO_11, CHAR_ZERO_111 } from "./constants/stream";
 import { TRIE_NODE_VALUE_IDX, TRIE_NULL } from "./constants/utf8Trie";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
 import { MergeRequest } from "./types/mergeRequest";
 import { MergeResponse } from "./types/mergeResponse";
+import { parseDouble } from "./utils/parse";
 
 export async function run({
   end,
@@ -98,18 +97,6 @@ export async function run({
   }
 
   return { type: "process_response", id, trie };
-}
-
-export function parseDouble(b: Buffer, min: number, max: number): number {
-  if (b[min] === CHAR_MINUS) {
-    ++min;
-    return min + 4 > max
-      ? -(10 * b[min] + b[min + 2] - CHAR_ZERO_11)
-      : -(100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111);
-  }
-  return min + 4 > max
-    ? 10 * b[min] + b[min + 2] - CHAR_ZERO_11
-    : 100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111;
 }
 
 export function merge({

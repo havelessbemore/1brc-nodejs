@@ -1,5 +1,3 @@
-import { CHAR_ZERO } from "./utf8";
-
 /**
  * The minimum value in bytes for `highWaterMark`.
  */
@@ -25,15 +23,3 @@ export const HIGH_WATER_MARK_RATIO = 0.000152;
  * The minimum size in bytes of a file chunk.
  */
 export const CHUNK_SIZE_MIN = HIGH_WATER_MARK_MIN;
-
-// PARSE DOUBLE
-
-/**
- * Used to parse doubles from -9.9 to 9.9.
- */
-export const CHAR_ZERO_11 = 11 * CHAR_ZERO;
-
-/**
- * Used to parse doubles from -99.9 to 99.9.
- */
-export const CHAR_ZERO_111 = 111 * CHAR_ZERO;
