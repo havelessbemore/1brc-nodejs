@@ -62,7 +62,7 @@ export async function run(
       start: chunks[i][0],
       sums,
     }).then(async (res) => {
-      // Add the worker's trie
+      // Add result to trie array
       const a = res.id;
       tries[res.id] = res.trie;
       // Merge with other tries
@@ -77,6 +77,7 @@ export async function run(
           sums,
           tries,
         });
+        // Update the trie array
         for (const id of res.ids) {
           tries[id] = res.tries[id];
         }
