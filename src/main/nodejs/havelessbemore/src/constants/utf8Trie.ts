@@ -1,9 +1,9 @@
-import { UTF8_BYTE_SPAN } from "./utf8";
-
 // Configurable constants.
 //
 // Controls trie behavior such as the default
 // allocated size and the growth factor when resizing.
+
+import { UTF8 } from "./utf8";
 
 /**
  * The default initial size of a trie.
@@ -54,7 +54,7 @@ export const TRIE_NODE_VALUE_MEM = 1;
 
 // The node's children pointers
 export const TRIE_NODE_CHILDREN_IDX = 2;
-export const TRIE_NODE_CHILDREN_LEN = UTF8_BYTE_SPAN;
+export const TRIE_NODE_CHILDREN_LEN = UTF8.BYTE_SPAN;
 export const TRIE_NODE_CHILDREN_MEM = TRIE_PTR_MEM * TRIE_NODE_CHILDREN_LEN;
 
 export const TRIE_NODE_MEM =

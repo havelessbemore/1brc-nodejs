@@ -17,7 +17,7 @@ import {
   TRIE_NODE_CHILDREN_MEM,
   TRIE_NODE_CHILDREN_LEN,
 } from "../constants/utf8Trie";
-import { UTF8_BYTE_MIN } from "../constants/utf8";
+import { UTF8 } from "../constants/utf8";
 
 export function add(
   trie: Int32Array,
@@ -28,7 +28,7 @@ export function add(
   let index = TRIE_ROOT_IDX;
   while (min < max) {
     index +=
-      TRIE_NODE_CHILDREN_IDX + /*TRIE_PTR_MEM * */ (key[min++] - UTF8_BYTE_MIN);
+      TRIE_NODE_CHILDREN_IDX + /*TRIE_PTR_MEM * */ (key[min++] - UTF8.BYTE_MIN);
     let child = trie[index /*+ TRIE_PTR_IDX_IDX*/];
     if (child === TRIE_NULL) {
       // Allocate node
@@ -60,7 +60,7 @@ export function get(
     const ptr =
       node +
       TRIE_NODE_CHILDREN_IDX +
-      /*TRIE_PTR_MEM * */ (key[min++] - UTF8_BYTE_MIN);
+      /*TRIE_PTR_MEM * */ (key[min++] - UTF8.BYTE_MIN);
     let child = tries[trie][ptr /* + TRIE_PTR_IDX_IDX*/];
     if (child === TRIE_NULL) {
       return undefined;
@@ -221,7 +221,7 @@ export function print(
     }
 
     // Add the child to the stack
-    key[top] = numChild + UTF8_BYTE_MIN;
+    key[top] = numChild + UTF8.BYTE_MIN;
     stack[++top] = [trieI, childI + TRIE_NODE_CHILDREN_IDX, 0];
 
     // Print value, if any
