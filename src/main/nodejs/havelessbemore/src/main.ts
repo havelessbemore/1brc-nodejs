@@ -1,5 +1,4 @@
 import { WriteStream, createWriteStream } from "node:fs";
-import { Worker } from "node:worker_threads";
 
 import type { MergeRequest } from "./types/mergeRequest";
 import type { MergeResponse } from "./types/mergeResponse";
@@ -45,16 +44,14 @@ export async function run(
   const sums = new Float64Array(valBuf, 8);
   const tries = new Array<Int32Array>(maxWorkers);
 
-  // Create workers
-  const workers = new Array<Worker>(maxWorkers);
-  for (let i = 0; i < maxWorkers; ++i) {
-    workers[i] = createWorker(workerPath);
-  }
-
-  // Process each chunk
+  // Run
+  const unmerged: number[] = [];
   const tasks = new Array<Promise<unknown>>(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
-    tasks[i] = exec<ProcessRequest, ProcessResponse>(workers[i], {
+    // Create the worker
+    const worker = createWorker(workerPath);
+    // Process the chunk
+    tasks[i] = exec<ProcessRequest, ProcessResponse>(worker, {
       type: "process",
       counts,
       end: chunks[i][1],
@@ -64,39 +61,30 @@ export async function run(
       mins,
       start: chunks[i][0],
       sums,
-    }).then((res) => {
+    }).then(async (res) => {
+      // Add the worker's trie
+      const a = res.id;
       tries[res.id] = res.trie;
-    });
-  }
-
-  // Merge tries
-  for (let i = tasks.length - 1; i > 0; --i) {
-    const a = (i - 1) >> 1;
-    const b = i;
-    tasks[a] = tasks[a]
-      .then(() => tasks[b])
-      .then(() =>
-        exec<MergeRequest, MergeResponse>(workers[a], {
+      // Merge with other tries
+      while (unmerged.length > 0) {
+        const res = await exec<MergeRequest, MergeResponse>(worker, {
           type: "merge",
           a,
-          b,
+          b: unmerged.pop()!,
           counts,
           maxes,
           mins,
           sums,
           tries,
-        }),
-      )
-      .then((res) => {
+        });
         for (const id of res.ids) {
           tries[id] = res.tries[id];
         }
-      });
-  }
-
-  // Terminate workers
-  for (let i = 0; i < maxWorkers; ++i) {
-    tasks[i] = tasks[i].then(() => workers[i].terminate());
+      }
+      unmerged.push(a);
+      // Stop worker
+      return worker.terminate();
+    });
   }
 
   // Wait for completion
@@ -110,7 +98,7 @@ export async function run(
   });
   const buffer = Buffer.allocUnsafe(STATION_NAME_MAX_LEN);
   out.write("{");
-  print(tries, buffer, 0, out, ", ", printStation);
+  print(tries, buffer, unmerged[0], out, ", ", printStation);
   out.end("}\n");
 
   function printStation(
