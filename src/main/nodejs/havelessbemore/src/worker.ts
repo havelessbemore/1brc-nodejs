@@ -3,7 +3,6 @@ import { createReadStream } from "node:fs";
 import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
-import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
 import { TRIE_NODE_VALUE_IDX, TRIE_NULL } from "./constants/utf8Trie";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
@@ -11,6 +10,7 @@ import { MergeRequest } from "./types/mergeRequest";
 import { MergeResponse } from "./types/mergeResponse";
 import { parseDouble } from "./utils/parse";
 import { CharCode } from "./constants/utf8";
+import { BRC } from "./constants/brc";
 
 export async function run({
   end,
@@ -30,8 +30,8 @@ export async function run({
 
   // Initialize constants
   let trie = createTrie(id);
-  let stations = id * MAX_STATIONS + 1;
-  const buffer = Buffer.allocUnsafe(ENTRY_MAX_LEN);
+  let stations = id * BRC.MAX_STATIONS + 1;
+  const buffer = Buffer.allocUnsafe(BRC.MAX_ENTRY_LEN);
 
   // Create the chunk stream
   const stream = createReadStream(filePath, {

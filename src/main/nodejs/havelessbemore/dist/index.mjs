@@ -1,29 +1,444 @@
-/*!
- * https://github.com/havelessbemore/1brc-nodejs
- *
- * MIT License
- *
- * Copyright (C) 2024-2024 Michael Rojas <dev.michael.rojas@gmail.com> (https://github.com/havelessbemore)
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// src/index.ts
+import { availableParallelism } from "node:os";
+import { fileURLToPath } from "node:url";
+import { isMainThread, parentPort } from "node:worker_threads";
 
-import{availableParallelism as V}from"node:os";import{fileURLToPath as z}from"node:url";import{isMainThread as j,parentPort as S}from"node:worker_threads";import{createWriteStream as q,createReadStream as J}from"node:fs";import{open as Q}from"fs/promises";import{Worker as tt}from"worker_threads";const L=1e4,et=100,x=107,rt=16384,nt=1048576,ot=1048576,at=152e-6,st=16384,it=1,_t=512,ct=45,U=10,W=59,P=48,C=32,Et=216;function F(t,r,e){return t>r?t<=e?t:e:r}async function ft(t,r,e,u=0){const i=await Q(t);try{const a=(await i.stat()).size,E=Math.max(u,Math.floor(a/r)),c=Buffer.allocUnsafe(e),o=[];let s=0;for(let _=E;_<a;_+=E){const l=await i.read(c,0,e,_),f=c.indexOf(U);f>=0&&f<l.bytesRead&&(_+=f+1,o.push([s,_]),s=_)}return s<a&&o.push([s,a]),o}finally{await i.close()}}function ut(t){return t*=at,t=Math.round(Math.log2(t)),t=2**t,F(t,rt,nt)}const It=655360,lt=1.6180339887,Rt=1,y=Rt,Mt=1,D=1,Tt=1,H=Mt+Tt,mt=0,ht=1,d=1,wt=1,N=2,k=Et,B=y*k,O=ht+wt+B,h=0,g=0,At=1,p=1,dt=O,K=p+mt,Z=At+dt;function gt(t,r,e,u){let i=p;for(;e<u;){i+=N+(r[e++]-C);let a=t[i];a===h&&(a=t[g],a+O>t.length&&(t=G(t,a+O)),t[g]+=O,t[i]=a,t[a]=t[K]),i=a}return[t,i]}function b(t=0,r=It){r=Math.max(Z,r);const e=new Int32Array(new SharedArrayBuffer(r<<2));return e[g]=Z,e[K]=t,e}function G(t,r=0){const e=t[g];r=Math.max(r,Math.ceil(e*lt));const u=new Int32Array(new SharedArrayBuffer(r<<2));for(let i=0;i<e;++i)u[i]=t[i];return u}function Nt(t,r,e,u){const i=new Set,a=[[r,p,e,p]];do{const E=a.length;for(let c=0;c<E;++c){let[o,s,_,l]=a[c];const f=t[_][l+d];if(f!==h){const R=t[o][s+d];R!==h?u(R,f):t[o][s+d]=f}s+=N,l+=N;const T=l+B;for(;l<T;){let R=t[_][l];if(R!==h){const w=t[_][R];_!==w&&(R=t[_][R+D]);let n=t[o][s];if(n===h)n=t[o][g],n+H>t[o].length&&(t[o]=G(t[o],n+H),i.add(o)),t[o][g]+=H,t[o][s]=n,t[o][n]=w,t[o][n+D]=R;else{const I=t[o][n];o!==I&&(n=t[o][n+D]),a.push([I,n,w,R])}}s+=y,l+=y}}a.splice(0,E)}while(a.length>0);return Array.from(i)}function pt(t,r,e,u,i="",a){const E=new Array(r.length+1);E[0]=[e,p+N,0];let c=0,o=!1;do{let[s,_,l]=E[c];if(l>=k){--c;continue}E[c][1]+=y,++E[c][2];let f=t[s][_];if(f===h)continue;const T=t[s][f];s!==T&&(f=t[s][f+D],s=T),r[c]=l+C,E[++c]=[s,f+N,0];const R=t[s][f+d];R!==h&&(o&&u.write(i),o=!0,a(u,r,c,R))}while(c>=0)}function yt(t){const r=new tt(t);return r.on("error",e=>{throw e}),r.on("messageerror",e=>{throw e}),r.on("exit",e=>{if(e>1||e<0)throw new Error(`Worker ${r.threadId} exited with code ${e}`)}),r}function v(t,r){return new Promise(e=>{t.once("message",e),t.postMessage(r)})}async function Dt(t,r,e,u=""){e=F(e,it,_t);const i=await ft(t,e,x,st);e=i.length;const a=new SharedArrayBuffer(L*e+1<<4),E=new Int16Array(a),c=new Int16Array(a,2),o=new Uint32Array(a,4),s=new Float64Array(a,8),_=new Array(e),l=[],f=new Array(e);for(let n=0;n<e;++n){const I=yt(r);f[n]=v(I,{type:"process",counts:o,end:i[n][1],filePath:t,id:n,maxes:c,mins:E,start:i[n][0],sums:s}).then(async m=>{const M=m.id;for(_[m.id]=m.trie;l.length>0;){const A=await v(I,{type:"merge",a:M,b:l.pop(),counts:o,maxes:c,mins:E,sums:s,tries:_});for(const X of A.ids)_[X]=A.tries[X]}return l.push(M),I.terminate()})}await Promise.all(f);const T=q(u,{fd:u.length<1?1:void 0,flags:"a",highWaterMark:ot}),R=Buffer.allocUnsafe(et);T.write("{"),pt(_,R,l[0],T,", ",w),T.end(`}
-`);function w(n,I,m,M){const A=Math.round(s[M<<1]/o[M<<2]);n.write(I.toString("utf8",0,m)),n.write("="),n.write((E[M<<3]/10).toFixed(1)),n.write("/"),n.write((A/10).toFixed(1)),n.write("/"),n.write((c[M<<3]/10).toFixed(1))}}const Y=11*P,$=111*P;function Ot(t,r,e){return t[r]===ct?(++r,r+4>e?Y-10*t[r]-t[r+2]:$-100*t[r]-10*t[r+1]-t[r+3]):r+4>e?10*t[r]+t[r+2]-Y:100*t[r]+10*t[r+1]+t[r+3]-$}async function St({end:t,filePath:r,id:e,start:u,counts:i,maxes:a,mins:E,sums:c}){if(u>=t)return{id:e,trie:b(e,0)};let o=b(e),s=e*L+1;const _=Buffer.allocUnsafe(x),l=J(r,{start:u,end:t-1,highWaterMark:ut(t-u)});let f=0,T;for await(const n of l){const I=n.length;for(let m=0;m<I;++m){if(n[m]!==U){_[f++]=n[m];continue}let M=f-4;_[M-2]===W?M-=2:_[M-1]===W&&(M-=1);const A=Ot(_,M+1,f);f=0,[o,T]=gt(o,_,0,M),o[T+d]!==h?w(o[T+d],A):(o[T+d]=s,R(s++,A))}}function R(n,I){E[n<<3]=I,a[n<<3]=I,i[n<<2]=1,c[n<<1]=I}function w(n,I){n<<=3,E[n]=E[n]<=I?E[n]:I,a[n]=a[n]>=I?a[n]:I,++i[n>>1],c[n>>2]+=I}return{id:e,trie:o}}function Ht({a:t,b:r,tries:e,counts:u,maxes:i,mins:a,sums:E}){function c(o,s){o<<=3,s<<=3,a[o]=Math.min(a[o],a[s]),i[o]=Math.max(i[o],i[s]),u[o>>1]+=u[s>>1],E[o>>2]+=E[s>>2]}return{ids:Nt(e,t,r,c),tries:e}}if(j){const t=z(import.meta.url);Dt(process.argv[2],t,V())}else S.addListener("message",async t=>{if(t.type==="process")S.postMessage(await St(t));else if(t.type==="merge")S.postMessage(Ht(t));else throw new Error("Unknown message type")});
+// src/main.ts
+import { createWriteStream } from "node:fs";
+
+// src/utils/stream.ts
+import { open } from "fs/promises";
+function clamp(value, min, max) {
+  return value > min ? value <= max ? value : max : min;
+}
+async function getFileChunks(filePath, target, maxLineLength, minSize = 0) {
+  const file = await open(filePath);
+  try {
+    const size = (await file.stat()).size;
+    const chunkSize = Math.max(minSize, Math.floor(size / target));
+    const buffer = Buffer.allocUnsafe(maxLineLength);
+    const chunks = [];
+    let start = 0;
+    for (let end = chunkSize; end < size; end += chunkSize) {
+      const res = await file.read(buffer, 0, maxLineLength, end);
+      const newline = buffer.indexOf(10 /* NEWLINE */);
+      if (newline >= 0 && newline < res.bytesRead) {
+        end += newline + 1;
+        chunks.push([start, end]);
+        start = end;
+      }
+    }
+    if (start < size) {
+      chunks.push([start, size]);
+    }
+    return chunks;
+  } finally {
+    await file.close();
+  }
+}
+function getHighWaterMark(size) {
+  size *= 152e-6 /* HIGH_WATER_MARK_RATIO */;
+  size = Math.round(Math.log2(size));
+  size = 2 ** size;
+  return clamp(size, 16384 /* HIGH_WATER_MARK_MIN */, 1048576 /* HIGH_WATER_MARK_MAX */);
+}
+
+// src/constants/utf8Trie.ts
+var TRIE_DEFAULT_SIZE = 655360;
+var TRIE_GROWTH_FACTOR = 1.6180339887;
+var TRIE_PTR_IDX_MEM = 1;
+var TRIE_PTR_MEM = TRIE_PTR_IDX_MEM;
+var TRIE_XPTR_ID_MEM = 1;
+var TRIE_XPTR_IDX_IDX = 1;
+var TRIE_XPTR_IDX_MEM = 1;
+var TRIE_XPTR_MEM = TRIE_XPTR_ID_MEM + TRIE_XPTR_IDX_MEM;
+var TRIE_NODE_ID_IDX = 0;
+var TRIE_NODE_ID_MEM = 1;
+var TRIE_NODE_VALUE_IDX = 1;
+var TRIE_NODE_VALUE_MEM = 1;
+var TRIE_NODE_CHILDREN_IDX = 2;
+var TRIE_NODE_CHILDREN_LEN = 216 /* BYTE_SPAN */;
+var TRIE_NODE_CHILDREN_MEM = TRIE_PTR_MEM * TRIE_NODE_CHILDREN_LEN;
+var TRIE_NODE_MEM = TRIE_NODE_ID_MEM + TRIE_NODE_VALUE_MEM + TRIE_NODE_CHILDREN_MEM;
+var TRIE_NULL = 0;
+var TRIE_SIZE_IDX = 0;
+var TRIE_SIZE_MEM = 1;
+var TRIE_ROOT_IDX = 1;
+var TRIE_ROOT_MEM = TRIE_NODE_MEM;
+var TRIE_ID_IDX = TRIE_ROOT_IDX + TRIE_NODE_ID_IDX;
+var TRIE_MEM = TRIE_SIZE_MEM + TRIE_ROOT_MEM;
+
+// src/utils/utf8Trie.ts
+function add(trie, key, min, max) {
+  let index = TRIE_ROOT_IDX;
+  while (min < max) {
+    index += TRIE_NODE_CHILDREN_IDX + /*TRIE_PTR_MEM * */
+    (key[min++] - 32 /* BYTE_MIN */);
+    let child = trie[
+      index
+      /*+ TRIE_PTR_IDX_IDX*/
+    ];
+    if (child === TRIE_NULL) {
+      child = trie[TRIE_SIZE_IDX];
+      if (child + TRIE_NODE_MEM > trie.length) {
+        trie = grow(trie, child + TRIE_NODE_MEM);
+      }
+      trie[TRIE_SIZE_IDX] += TRIE_NODE_MEM;
+      trie[
+        index
+        /*+ TRIE_PTR_IDX_IDX*/
+      ] = child;
+      trie[
+        child
+        /* + TRIE_NODE_ID_IDX*/
+      ] = trie[TRIE_ID_IDX];
+    }
+    index = child;
+  }
+  return [trie, index];
+}
+function createTrie(id = 0, size = TRIE_DEFAULT_SIZE) {
+  size = Math.max(TRIE_MEM, size);
+  const trie = new Int32Array(new SharedArrayBuffer(size << 2));
+  trie[TRIE_SIZE_IDX] = TRIE_MEM;
+  trie[TRIE_ID_IDX] = id;
+  return trie;
+}
+function grow(trie, minSize = 0) {
+  const length = trie[TRIE_SIZE_IDX];
+  minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
+  const next = new Int32Array(new SharedArrayBuffer(minSize << 2));
+  for (let i = 0; i < length; ++i) {
+    next[i] = trie[i];
+  }
+  return next;
+}
+function mergeLeft(tries, at, bt, mergeFn) {
+  const grown = /* @__PURE__ */ new Set();
+  const queue = [
+    [at, TRIE_ROOT_IDX, bt, TRIE_ROOT_IDX]
+  ];
+  do {
+    const Q = queue.length;
+    for (let q = 0; q < Q; ++q) {
+      let [at2, ai, bt2, bi] = queue[q];
+      const bvi = tries[bt2][bi + TRIE_NODE_VALUE_IDX];
+      if (bvi !== TRIE_NULL) {
+        const avi = tries[at2][ai + TRIE_NODE_VALUE_IDX];
+        if (avi !== TRIE_NULL) {
+          mergeFn(avi, bvi);
+        } else {
+          tries[at2][ai + TRIE_NODE_VALUE_IDX] = bvi;
+        }
+      }
+      ai += TRIE_NODE_CHILDREN_IDX;
+      bi += TRIE_NODE_CHILDREN_IDX;
+      const bn = bi + TRIE_NODE_CHILDREN_MEM;
+      while (bi < bn) {
+        let ri = tries[bt2][
+          bi
+          /* + TRIE_PTR_IDX_IDX*/
+        ];
+        if (ri !== TRIE_NULL) {
+          const rt = tries[bt2][
+            ri
+            /*+ TRIE_NODE_ID_IDX*/
+          ];
+          if (bt2 !== rt) {
+            ri = tries[bt2][ri + TRIE_XPTR_IDX_IDX];
+          }
+          let li = tries[at2][
+            ai
+            /*+ TRIE_PTR_IDX_IDX*/
+          ];
+          if (li === TRIE_NULL) {
+            li = tries[at2][TRIE_SIZE_IDX];
+            if (li + TRIE_XPTR_MEM > tries[at2].length) {
+              tries[at2] = grow(tries[at2], li + TRIE_XPTR_MEM);
+              grown.add(at2);
+            }
+            tries[at2][TRIE_SIZE_IDX] += TRIE_XPTR_MEM;
+            tries[at2][
+              ai
+              /*+ TRIE_PTR_IDX_IDX*/
+            ] = li;
+            tries[at2][
+              li
+              /* + TRIE_XPTR_ID_IDX*/
+            ] = rt;
+            tries[at2][li + TRIE_XPTR_IDX_IDX] = ri;
+          } else {
+            const lt = tries[at2][
+              li
+              /* + TRIE_NODE_ID_IDX*/
+            ];
+            if (at2 !== lt) {
+              li = tries[at2][li + TRIE_XPTR_IDX_IDX];
+            }
+            queue.push([lt, li, rt, ri]);
+          }
+        }
+        ai += TRIE_PTR_MEM;
+        bi += TRIE_PTR_MEM;
+      }
+    }
+    queue.splice(0, Q);
+  } while (queue.length > 0);
+  return Array.from(grown);
+}
+function print(tries, key, trieIndex, stream, separator = "", callbackFn) {
+  const stack = new Array(key.length + 1);
+  stack[0] = [trieIndex, TRIE_ROOT_IDX + TRIE_NODE_CHILDREN_IDX, 0];
+  let top = 0;
+  let tail = false;
+  do {
+    let [trieI, childPtr, numChild] = stack[top];
+    if (numChild >= TRIE_NODE_CHILDREN_LEN) {
+      --top;
+      continue;
+    }
+    stack[top][1] += TRIE_PTR_MEM;
+    ++stack[top][2];
+    let childI = tries[trieI][
+      childPtr
+      /* + TRIE_PTR_IDX_IDX*/
+    ];
+    if (childI === TRIE_NULL) {
+      continue;
+    }
+    const childTrieI = tries[trieI][
+      childI
+      /* + TRIE_NODE_ID_IDX*/
+    ];
+    if (trieI !== childTrieI) {
+      childI = tries[trieI][childI + TRIE_XPTR_IDX_IDX];
+      trieI = childTrieI;
+    }
+    key[top] = numChild + 32 /* BYTE_MIN */;
+    stack[++top] = [trieI, childI + TRIE_NODE_CHILDREN_IDX, 0];
+    const valueIndex = tries[trieI][childI + TRIE_NODE_VALUE_IDX];
+    if (valueIndex !== TRIE_NULL) {
+      if (tail) {
+        stream.write(separator);
+      }
+      tail = true;
+      callbackFn(stream, key, top, valueIndex);
+    }
+  } while (top >= 0);
+}
+
+// src/utils/worker.ts
+import { Worker } from "worker_threads";
+function createWorker(workerPath) {
+  const worker = new Worker(workerPath);
+  worker.on("error", (err) => {
+    throw err;
+  });
+  worker.on("messageerror", (err) => {
+    throw err;
+  });
+  worker.on("exit", (code) => {
+    if (code > 1 || code < 0) {
+      throw new Error(`Worker ${worker.threadId} exited with code ${code}`);
+    }
+  });
+  return worker;
+}
+function exec(worker, req) {
+  return new Promise((resolve) => {
+    worker.once("message", resolve);
+    worker.postMessage(req);
+  });
+}
+
+// src/main.ts
+async function run(filePath, workerPath, maxWorkers, outPath = "") {
+  maxWorkers = clamp(maxWorkers, 1 /* WORKERS_MIN */, 512 /* WORKERS_MAX */);
+  const chunks = await getFileChunks(
+    filePath,
+    maxWorkers,
+    107 /* MAX_ENTRY_LEN */,
+    16384 /* CHUNK_SIZE_MIN */
+  );
+  maxWorkers = chunks.length;
+  const valBuf = new SharedArrayBuffer(
+    1e4 /* MAX_STATIONS */ * maxWorkers + 1 << 4
+  );
+  const mins = new Int16Array(valBuf);
+  const maxes = new Int16Array(valBuf, 2);
+  const counts = new Uint32Array(valBuf, 4);
+  const sums = new Float64Array(valBuf, 8);
+  const tries = new Array(maxWorkers);
+  const unmerged = [];
+  const tasks = new Array(maxWorkers);
+  for (let i = 0; i < maxWorkers; ++i) {
+    const worker = createWorker(workerPath);
+    tasks[i] = exec(worker, {
+      type: "process",
+      counts,
+      end: chunks[i][1],
+      filePath,
+      id: i,
+      maxes,
+      mins,
+      start: chunks[i][0],
+      sums
+    }).then(async (res) => {
+      const a = res.id;
+      tries[res.id] = res.trie;
+      while (unmerged.length > 0) {
+        const res2 = await exec(worker, {
+          type: "merge",
+          a,
+          b: unmerged.pop(),
+          counts,
+          maxes,
+          mins,
+          sums,
+          tries
+        });
+        for (const id of res2.ids) {
+          tries[id] = res2.tries[id];
+        }
+      }
+      unmerged.push(a);
+      return worker.terminate();
+    });
+  }
+  await Promise.all(tasks);
+  const out = createWriteStream(outPath, {
+    fd: outPath.length < 1 ? 1 : void 0,
+    flags: "a",
+    highWaterMark: 1048576 /* HIGH_WATER_MARK_OUT */
+  });
+  const buffer = Buffer.allocUnsafe(100 /* MAX_STATION_NAME_LEN */);
+  out.write("{");
+  print(tries, buffer, unmerged[0], out, ", ", printStation);
+  out.end("}\n");
+  function printStation(stream, name, nameLen, vi) {
+    const avg = Math.round(sums[vi << 1] / counts[vi << 2]);
+    stream.write(name.toString("utf8", 0, nameLen));
+    stream.write("=");
+    stream.write((mins[vi << 3] / 10).toFixed(1));
+    stream.write("/");
+    stream.write((avg / 10).toFixed(1));
+    stream.write("/");
+    stream.write((maxes[vi << 3] / 10).toFixed(1));
+  }
+}
+
+// src/worker.ts
+import { createReadStream } from "node:fs";
+
+// src/utils/parse.ts
+var CHAR_ZERO_11 = 11 * 48 /* ZERO */;
+var CHAR_ZERO_111 = 111 * 48 /* ZERO */;
+function parseDouble(b, min, max) {
+  if (b[min] === 45 /* MINUS */) {
+    ++min;
+    return min + 4 > max ? CHAR_ZERO_11 - 10 * b[min] - b[min + 2] : CHAR_ZERO_111 - 100 * b[min] - 10 * b[min + 1] - b[min + 3];
+  }
+  return min + 4 > max ? 10 * b[min] + b[min + 2] - CHAR_ZERO_11 : 100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111;
+}
+
+// src/worker.ts
+async function run2({
+  end,
+  filePath,
+  id,
+  start,
+  // Shared memory
+  counts,
+  maxes,
+  mins,
+  sums
+}) {
+  if (start >= end) {
+    return { id, trie: createTrie(id, 0) };
+  }
+  let trie = createTrie(id);
+  let stations = id * 1e4 /* MAX_STATIONS */ + 1;
+  const buffer = Buffer.allocUnsafe(107 /* MAX_ENTRY_LEN */);
+  const stream = createReadStream(filePath, {
+    start,
+    end: end - 1,
+    highWaterMark: getHighWaterMark(end - start)
+  });
+  let bufI = 0;
+  let leaf;
+  for await (const chunk of stream) {
+    const N = chunk.length;
+    for (let i = 0; i < N; ++i) {
+      if (chunk[i] !== 10 /* NEWLINE */) {
+        buffer[bufI++] = chunk[i];
+        continue;
+      }
+      let semI = bufI - 4;
+      if (buffer[semI - 2] === 59 /* SEMICOLON */) {
+        semI -= 2;
+      } else if (buffer[semI - 1] === 59 /* SEMICOLON */) {
+        semI -= 1;
+      }
+      const tempV = parseDouble(buffer, semI + 1, bufI);
+      bufI = 0;
+      [trie, leaf] = add(trie, buffer, 0, semI);
+      if (trie[leaf + TRIE_NODE_VALUE_IDX] !== TRIE_NULL) {
+        updateStation(trie[leaf + TRIE_NODE_VALUE_IDX], tempV);
+      } else {
+        trie[leaf + TRIE_NODE_VALUE_IDX] = stations;
+        newStation(stations++, tempV);
+      }
+    }
+  }
+  function newStation(index, temp) {
+    mins[index << 3] = temp;
+    maxes[index << 3] = temp;
+    counts[index << 2] = 1;
+    sums[index << 1] = temp;
+  }
+  function updateStation(index, temp) {
+    index <<= 3;
+    mins[index] = mins[index] <= temp ? mins[index] : temp;
+    maxes[index] = maxes[index] >= temp ? maxes[index] : temp;
+    ++counts[index >> 1];
+    sums[index >> 2] += temp;
+  }
+  return { id, trie };
+}
+function merge({
+  a,
+  b,
+  tries,
+  counts,
+  maxes,
+  mins,
+  sums
+}) {
+  function mergeStations(ai, bi) {
+    ai <<= 3;
+    bi <<= 3;
+    mins[ai] = Math.min(mins[ai], mins[bi]);
+    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    counts[ai >> 1] += counts[bi >> 1];
+    sums[ai >> 2] += sums[bi >> 2];
+  }
+  const ids = mergeLeft(tries, a, b, mergeStations);
+  return { ids, tries };
+}
+
+// src/index.ts
+if (isMainThread) {
+  const workerPath = fileURLToPath(import.meta.url);
+  run(process.argv[2], workerPath, availableParallelism());
+} else {
+  parentPort.addListener("message", async (msg) => {
+    if (msg.type === "process") {
+      parentPort.postMessage(await run2(msg));
+    } else if (msg.type === "merge") {
+      parentPort.postMessage(merge(msg));
+    } else {
+      throw new Error("Unknown message type");
+    }
+  });
+}
 //# sourceMappingURL=index.mjs.map

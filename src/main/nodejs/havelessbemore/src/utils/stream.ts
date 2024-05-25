@@ -1,11 +1,7 @@
 import { open } from "fs/promises";
 
-import {
-  HIGH_WATER_MARK_MAX,
-  HIGH_WATER_MARK_MIN,
-  HIGH_WATER_MARK_RATIO,
-} from "../constants/stream";
 import { CharCode } from "../constants/utf8";
+import { Config } from "../constants/config";
 
 /**
  * Clamp a value within a given range.
@@ -92,11 +88,11 @@ export async function getFileChunks(
  */
 export function getHighWaterMark(size: number): number {
   // Get size percentage
-  size *= HIGH_WATER_MARK_RATIO;
+  size *= Config.HIGH_WATER_MARK_RATIO;
   // Get nearest power
   size = Math.round(Math.log2(size));
   // Calculate high water mark
   size = 2 ** size;
   // Clamp value
-  return clamp(size, HIGH_WATER_MARK_MIN, HIGH_WATER_MARK_MAX);
+  return clamp(size, Config.HIGH_WATER_MARK_MIN, Config.HIGH_WATER_MARK_MAX);
 }

@@ -5,16 +5,11 @@ import type { MergeResponse } from "./types/mergeResponse";
 import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
-import {
-  ENTRY_MAX_LEN,
-  MAX_STATIONS,
-  STATION_NAME_MAX_LEN,
-} from "./constants/constraints";
-import { CHUNK_SIZE_MIN, HIGH_WATER_MARK_OUT } from "./constants/stream";
-import { MAX_WORKERS, MIN_WORKERS } from "./constants/workers";
 import { clamp, getFileChunks } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
 import { createWorker, exec } from "./utils/worker";
+import { BRC } from "./constants/brc";
+import { Config } from "./constants/config";
 
 export async function run(
   filePath: string,
@@ -23,21 +18,23 @@ export async function run(
   outPath = "",
 ): Promise<void> {
   // Sanitize number of workers
-  maxWorkers = clamp(maxWorkers, MIN_WORKERS, MAX_WORKERS);
+  maxWorkers = clamp(maxWorkers, Config.WORKERS_MIN, Config.WORKERS_MAX);
 
   // Split the file into chunks. Creates 1 or fewer chunks per worker
   const chunks = await getFileChunks(
     filePath,
     maxWorkers,
-    ENTRY_MAX_LEN,
-    CHUNK_SIZE_MIN,
+    BRC.MAX_ENTRY_LEN,
+    Config.CHUNK_SIZE_MIN,
   );
 
   // Adjust the number of workers to the number of chunks
   maxWorkers = chunks.length;
 
   // Initialize data
-  const valBuf = new SharedArrayBuffer((MAX_STATIONS * maxWorkers + 1) << 4);
+  const valBuf = new SharedArrayBuffer(
+    (BRC.MAX_STATIONS * maxWorkers + 1) << 4,
+  );
   const mins = new Int16Array(valBuf);
   const maxes = new Int16Array(valBuf, 2);
   const counts = new Uint32Array(valBuf, 4);
@@ -95,9 +92,9 @@ export async function run(
   const out = createWriteStream(outPath, {
     fd: outPath.length < 1 ? 1 : undefined,
     flags: "a",
-    highWaterMark: HIGH_WATER_MARK_OUT,
+    highWaterMark: Config.HIGH_WATER_MARK_OUT,
   });
-  const buffer = Buffer.allocUnsafe(STATION_NAME_MAX_LEN);
+  const buffer = Buffer.allocUnsafe(BRC.MAX_STATION_NAME_LEN);
   out.write("{");
   print(tries, buffer, unmerged[0], out, ", ", printStation);
   out.end("}\n");
