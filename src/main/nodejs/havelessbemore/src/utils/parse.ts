@@ -12,8 +12,8 @@ export function parseDouble(b: Buffer, min: number, max: number): number {
   if (b[min] === CHAR_MINUS) {
     ++min;
     return min + 4 > max
-      ? -(10 * b[min] + b[min + 2] - CHAR_ZERO_11)
-      : -(100 * b[min] + 10 * b[min + 1] + b[min + 3] - CHAR_ZERO_111);
+      ? CHAR_ZERO_11 - 10 * b[min] - b[min + 2]
+      : CHAR_ZERO_111 - 100 * b[min] - 10 * b[min + 1] - b[min + 3];
   }
   return min + 4 > max
     ? 10 * b[min] + b[min + 2] - CHAR_ZERO_11
