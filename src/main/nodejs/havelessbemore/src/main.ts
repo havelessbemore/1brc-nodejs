@@ -5,11 +5,11 @@ import type { MergeResponse } from "./types/mergeResponse";
 import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
+import { BRC } from "./constants/brc";
+import { Config } from "./constants/config";
 import { clamp, getFileChunks } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
 import { createWorker, exec } from "./utils/worker";
-import { BRC } from "./constants/brc";
-import { Config } from "./constants/config";
 
 export async function run(
   filePath: string,

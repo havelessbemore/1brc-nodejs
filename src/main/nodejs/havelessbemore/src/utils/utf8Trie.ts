@@ -1,23 +1,13 @@
 import { WriteStream } from "node:fs";
 
-import {
-  TRIE_DEFAULT_SIZE,
-  TRIE_PTR_MEM,
-  TRIE_GROWTH_FACTOR,
-  TRIE_MEM,
-  TRIE_ID_IDX,
-  TRIE_NODE_CHILDREN_IDX,
-  TRIE_NODE_VALUE_IDX,
-  TRIE_NULL,
-  TRIE_ROOT_IDX,
-  TRIE_SIZE_IDX,
-  TRIE_XPTR_MEM,
-  TRIE_XPTR_IDX_IDX,
-  TRIE_NODE_MEM,
-  TRIE_NODE_CHILDREN_MEM,
-  TRIE_NODE_CHILDREN_LEN,
-} from "../constants/utf8Trie";
 import { UTF8 } from "../constants/utf8";
+import {
+  Trie,
+  TrieNodeProto,
+  TrieProto,
+  TriePointerProto,
+  TrieRedirectProto,
+} from "../constants/utf8Trie";
 
 export function add(
   trie: Int32Array,
@@ -25,22 +15,23 @@ export function add(
   min: number,
   max: number,
 ): [Int32Array, number] {
-  let index = TRIE_ROOT_IDX;
+  let index: number = TrieProto.ROOT_IDX;
   while (min < max) {
     index +=
-      TRIE_NODE_CHILDREN_IDX + /*TRIE_PTR_MEM * */ (key[min++] - UTF8.BYTE_MIN);
-    let child = trie[index /*+ TRIE_PTR_IDX_IDX*/];
-    if (child === TRIE_NULL) {
+      TrieNodeProto.CHILDREN_IDX +
+      TriePointerProto.MEM * (key[min++] - UTF8.BYTE_MIN);
+    let child = trie[index + TriePointerProto.IDX_IDX];
+    if (child === Trie.NULL) {
       // Allocate node
-      child = trie[TRIE_SIZE_IDX];
-      if (child + TRIE_NODE_MEM > trie.length) {
-        trie = grow(trie, child + TRIE_NODE_MEM);
+      child = trie[TrieProto.SIZE_IDX];
+      if (child + TrieNodeProto.MEM > trie.length) {
+        trie = grow(trie, child + TrieNodeProto.MEM);
       }
-      trie[TRIE_SIZE_IDX] += TRIE_NODE_MEM;
+      trie[TrieProto.SIZE_IDX] += TrieNodeProto.MEM;
       // Attach node
-      trie[index /*+ TRIE_PTR_IDX_IDX*/] = child;
+      trie[index + TriePointerProto.IDX_IDX] = child;
       // Initialize node
-      trie[child /* + TRIE_NODE_ID_IDX*/] = trie[TRIE_ID_IDX];
+      trie[child + TrieNodeProto.ID_IDX] = trie[TrieProto.ID_IDX];
     }
     index = child;
   }
@@ -55,20 +46,20 @@ export function get(
   min: number,
   max: number,
 ): number | undefined {
-  let node = TRIE_ROOT_IDX;
+  let node: number = TrieProto.ROOT_IDX;
   while (min < max) {
     const ptr =
       node +
-      TRIE_NODE_CHILDREN_IDX +
-      /*TRIE_PTR_MEM * */ (key[min++] - UTF8.BYTE_MIN);
-    let child = tries[trie][ptr /* + TRIE_PTR_IDX_IDX*/];
-    if (child === TRIE_NULL) {
+      TrieNodeProto.CHILDREN_IDX +
+      TriePointerProto.MEM * (key[min++] - UTF8.BYTE_MIN);
+    let child = tries[trie][ptr + TriePointerProto.IDX_IDX];
+    if (child === Trie.NULL) {
       return undefined;
     }
     // Resolve redirect, if any
-    const childTrie = tries[trie][child /* + TRIE_NODE_ID_IDX*/];
+    const childTrie = tries[trie][child + TrieNodeProto.ID_IDX];
     if (childTrie !== trie) {
-      child = tries[trie][child + TRIE_XPTR_IDX_IDX];
+      child = tries[trie][child + TrieRedirectProto.IDX_IDX];
       trie = childTrie;
     }
     node = child;
@@ -76,17 +67,17 @@ export function get(
   return node;
 }
 
-export function createTrie(id = 0, size = TRIE_DEFAULT_SIZE): Int32Array {
-  size = Math.max(TRIE_MEM, size);
+export function createTrie(id = 0, size = Trie.DEFAULT_SIZE): Int32Array {
+  size = Math.max(TrieProto.MEM, size);
   const trie = new Int32Array(new SharedArrayBuffer(size << 2));
-  trie[TRIE_SIZE_IDX] = TRIE_MEM;
-  trie[TRIE_ID_IDX] = id;
+  trie[TrieProto.SIZE_IDX] = TrieProto.MEM;
+  trie[TrieProto.ID_IDX] = id;
   return trie;
 }
 
 export function grow(trie: Int32Array, minSize = 0): Int32Array {
-  const length = trie[TRIE_SIZE_IDX];
-  minSize = Math.max(minSize, Math.ceil(length * TRIE_GROWTH_FACTOR));
+  const length = trie[TrieProto.SIZE_IDX];
+  minSize = Math.max(minSize, Math.ceil(length * Trie.GROWTH_FACTOR));
   const next = new Int32Array(new SharedArrayBuffer(minSize << 2));
   for (let i = 0; i < length; ++i) {
     next[i] = trie[i];
@@ -102,7 +93,7 @@ export function mergeLeft(
 ): number[] {
   const grown = new Set<number>();
   const queue: [number, number, number, number][] = [
-    [at, TRIE_ROOT_IDX, bt, TRIE_ROOT_IDX],
+    [at, TrieProto.ROOT_IDX, bt, TrieProto.ROOT_IDX],
   ];
 
   do {
@@ -112,53 +103,53 @@ export function mergeLeft(
       let [at, ai, bt, bi] = queue[q];
 
       // If right value is not null
-      const bvi = tries[bt][bi + TRIE_NODE_VALUE_IDX];
-      if (bvi !== TRIE_NULL) {
+      const bvi = tries[bt][bi + TrieNodeProto.VALUE_IDX];
+      if (bvi !== Trie.NULL) {
         // If left value is not null
-        const avi = tries[at][ai + TRIE_NODE_VALUE_IDX];
-        if (avi !== TRIE_NULL) {
+        const avi = tries[at][ai + TrieNodeProto.VALUE_IDX];
+        if (avi !== Trie.NULL) {
           mergeFn(avi, bvi);
         } else {
-          tries[at][ai + TRIE_NODE_VALUE_IDX] = bvi;
+          tries[at][ai + TrieNodeProto.VALUE_IDX] = bvi;
         }
       }
 
       // Adjust to children property
-      ai += TRIE_NODE_CHILDREN_IDX;
-      bi += TRIE_NODE_CHILDREN_IDX;
+      ai += TrieNodeProto.CHILDREN_IDX;
+      bi += TrieNodeProto.CHILDREN_IDX;
 
       // Traverse right children
-      const bn = bi + TRIE_NODE_CHILDREN_MEM;
+      const bn = bi + TrieNodeProto.CHILDREN_MEM;
       while (bi < bn) {
         // If right child is null
-        let ri = tries[bt][bi /* + TRIE_PTR_IDX_IDX*/];
-        if (ri !== TRIE_NULL) {
+        let ri = tries[bt][bi + TriePointerProto.IDX_IDX];
+        if (ri !== Trie.NULL) {
           // Resolve right child if redirect
-          const rt = tries[bt][ri /*+ TRIE_NODE_ID_IDX*/];
+          const rt = tries[bt][ri + TrieNodeProto.ID_IDX];
           if (bt !== rt) {
-            ri = tries[bt][ri + TRIE_XPTR_IDX_IDX];
+            ri = tries[bt][ri + TrieRedirectProto.IDX_IDX];
           }
 
           // If left child is null
-          let li = tries[at][ai /*+ TRIE_PTR_IDX_IDX*/];
-          if (li === TRIE_NULL) {
+          let li = tries[at][ai + TriePointerProto.IDX_IDX];
+          if (li === Trie.NULL) {
             // Allocate redirect
-            li = tries[at][TRIE_SIZE_IDX];
-            if (li + TRIE_XPTR_MEM > tries[at].length) {
-              tries[at] = grow(tries[at], li + TRIE_XPTR_MEM);
+            li = tries[at][TrieProto.SIZE_IDX];
+            if (li + TrieRedirectProto.MEM > tries[at].length) {
+              tries[at] = grow(tries[at], li + TrieRedirectProto.MEM);
               grown.add(at);
             }
-            tries[at][TRIE_SIZE_IDX] += TRIE_XPTR_MEM;
+            tries[at][TrieProto.SIZE_IDX] += TrieRedirectProto.MEM;
             // Attach redirect
-            tries[at][ai /*+ TRIE_PTR_IDX_IDX*/] = li;
+            tries[at][ai + TriePointerProto.IDX_IDX] = li;
             // Initialize redirect
-            tries[at][li /* + TRIE_XPTR_ID_IDX*/] = rt;
-            tries[at][li + TRIE_XPTR_IDX_IDX] = ri;
+            tries[at][li + TrieRedirectProto.ID_IDX] = rt;
+            tries[at][li + TrieRedirectProto.IDX_IDX] = ri;
           } else {
             // Resolve left child if redirect
-            const lt = tries[at][li /* + TRIE_NODE_ID_IDX*/];
+            const lt = tries[at][li + TrieNodeProto.ID_IDX];
             if (at !== lt) {
-              li = tries[at][li + TRIE_XPTR_IDX_IDX];
+              li = tries[at][li + TrieRedirectProto.IDX_IDX];
             }
             // Merge children
             queue.push([lt, li, rt, ri]);
@@ -166,8 +157,8 @@ export function mergeLeft(
         }
 
         // Move to next children
-        ai += TRIE_PTR_MEM;
-        bi += TRIE_PTR_MEM;
+        ai += TriePointerProto.MEM;
+        bi += TriePointerProto.MEM;
       }
     }
     queue.splice(0, Q);
@@ -189,7 +180,7 @@ export function print(
   ) => void,
 ): void {
   const stack = new Array<[number, number, number]>(key.length + 1);
-  stack[0] = [trieIndex, TRIE_ROOT_IDX + TRIE_NODE_CHILDREN_IDX, 0];
+  stack[0] = [trieIndex, TrieProto.ROOT_IDX + TrieNodeProto.CHILDREN_IDX, 0];
 
   let top = 0;
   let tail = false;
@@ -198,35 +189,35 @@ export function print(
     let [trieI, childPtr, numChild] = stack[top];
 
     // Check if end of children array
-    if (numChild >= TRIE_NODE_CHILDREN_LEN) {
+    if (numChild >= TrieNodeProto.CHILDREN_LEN) {
       --top;
       continue;
     }
 
     // Update stack top
-    stack[top][1] += TRIE_PTR_MEM;
+    stack[top][1] += TriePointerProto.MEM;
     ++stack[top][2];
 
     // Check if child exists
-    let childI = tries[trieI][childPtr /* + TRIE_PTR_IDX_IDX*/];
-    if (childI === TRIE_NULL) {
+    let childI = tries[trieI][childPtr + TriePointerProto.IDX_IDX];
+    if (childI === Trie.NULL) {
       continue;
     }
 
     // Resolve redirect, if any
-    const childTrieI = tries[trieI][childI /* + TRIE_NODE_ID_IDX*/];
+    const childTrieI = tries[trieI][childI + TrieNodeProto.ID_IDX];
     if (trieI !== childTrieI) {
-      childI = tries[trieI][childI + TRIE_XPTR_IDX_IDX];
+      childI = tries[trieI][childI + TrieRedirectProto.IDX_IDX];
       trieI = childTrieI;
     }
 
     // Add the child to the stack
     key[top] = numChild + UTF8.BYTE_MIN;
-    stack[++top] = [trieI, childI + TRIE_NODE_CHILDREN_IDX, 0];
+    stack[++top] = [trieI, childI + TrieNodeProto.CHILDREN_IDX, 0];
 
     // Print value, if any
-    const valueIndex = tries[trieI][childI + TRIE_NODE_VALUE_IDX];
-    if (valueIndex !== TRIE_NULL) {
+    const valueIndex = tries[trieI][childI + TrieNodeProto.VALUE_IDX];
+    if (valueIndex !== Trie.NULL) {
       // Print separator if not first value
       if (tail) {
         stream.write(separator);

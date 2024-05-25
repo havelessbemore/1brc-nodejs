@@ -1,16 +1,16 @@
 import { createReadStream } from "node:fs";
 
+import type { MergeRequest } from "./types/mergeRequest";
+import type { MergeResponse } from "./types/mergeResponse";
 import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
-import { TRIE_NODE_VALUE_IDX, TRIE_NULL } from "./constants/utf8Trie";
+import { BRC } from "./constants/brc";
+import { CharCode } from "./constants/utf8";
+import { Trie, TrieNodeProto } from "./constants/utf8Trie";
+import { parseDouble } from "./utils/parse";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
-import { MergeRequest } from "./types/mergeRequest";
-import { MergeResponse } from "./types/mergeResponse";
-import { parseDouble } from "./utils/parse";
-import { CharCode } from "./constants/utf8";
-import { BRC } from "./constants/brc";
 
 export async function run({
   end,
@@ -69,12 +69,12 @@ export async function run({
       [trie, leaf] = add(trie, buffer, 0, semI);
 
       // If the station existed
-      if (trie[leaf + TRIE_NODE_VALUE_IDX] !== TRIE_NULL) {
+      if (trie[leaf + TrieNodeProto.VALUE_IDX] !== Trie.NULL) {
         // Update the station's value
-        updateStation(trie[leaf + TRIE_NODE_VALUE_IDX], tempV);
+        updateStation(trie[leaf + TrieNodeProto.VALUE_IDX], tempV);
       } else {
         // Add the new station's value
-        trie[leaf + TRIE_NODE_VALUE_IDX] = stations;
+        trie[leaf + TrieNodeProto.VALUE_IDX] = stations;
         newStation(stations++, tempV);
       }
     }

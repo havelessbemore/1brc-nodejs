@@ -1,7 +1,7 @@
 import { open } from "fs/promises";
 
-import { CharCode } from "../constants/utf8";
 import { Config } from "../constants/config";
+import { CharCode } from "../constants/utf8";
 
 /**
  * Clamp a value within a given range.
