@@ -1,29 +1,30 @@
-// UTF-8 char codes
 
-/**
- * The char code for a minus sign: -
- */
-export const CHAR_MINUS = 45; // "-".charCodeAt(0);
+export const enum CharCode {
+    /**
+     * The char code for a minus sign: -
+     */
+    MINUS = 45, // "-".charCodeAt(0),
 
-/**
- * The char code for a newline: \n
- */
-export const CHAR_NEWLINE = 10; // "\n".charCodeAt(0);
+    /**
+     * The char code for a newline: \n
+     */
+    NEWLINE = 10, // "\n".charCodeAt(0),
 
-/**
- * The char code for a period: .
- */
-export const CHAR_PERIOD = 46; // ".".charCodeAt(0);
+    /**
+     * The char code for a period: .
+     */
+    PERIOD = 46, // ".".charCodeAt(0),
 
-/**
- * The char code for a semicolon: ;
- */
-export const CHAR_SEMICOLON = 59; // ";".charCodeAt(0);
+    /**
+     * The char code for a semicolon: ,
+     */
+    SEMICOLON = 59, // ";".charCodeAt(0),
 
-/**
- * The char code for a zero: 0
- */
-export const CHAR_ZERO = 48; // "0".charCodeAt(0);
+    /**
+     * The char code for a zero: 0
+     */
+    ZERO = 48, // "0".charCodeAt(0),
+};
 
 // UTF-8 constants
 

@@ -1,11 +1,11 @@
 import { open } from "fs/promises";
 
-import { CHAR_NEWLINE } from "../constants/utf8";
 import {
   HIGH_WATER_MARK_MAX,
   HIGH_WATER_MARK_MIN,
   HIGH_WATER_MARK_RATIO,
 } from "../constants/stream";
+import { CharCode } from "../constants/utf8";
 
 /**
  * Clamp a value within a given range.
@@ -60,7 +60,7 @@ export async function getFileChunks(
       // Read a line at the intended end index
       const res = await file.read(buffer, 0, maxLineLength, end);
       // Find the nearest newline ('\n') character
-      const newline = buffer.indexOf(CHAR_NEWLINE);
+      const newline = buffer.indexOf(CharCode.NEWLINE);
       // If found
       if (newline >= 0 && newline < res.bytesRead) {
         // Align end with the newline

@@ -3,8 +3,6 @@ import { createReadStream } from "node:fs";
 import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
-import { CHAR_SEMICOLON } from "./constants/utf8";
-import { CHAR_NEWLINE } from "./constants/utf8";
 import { ENTRY_MAX_LEN, MAX_STATIONS } from "./constants/constraints";
 import { TRIE_NODE_VALUE_IDX, TRIE_NULL } from "./constants/utf8Trie";
 import { getHighWaterMark } from "./utils/stream";
@@ -12,6 +10,7 @@ import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
 import { MergeRequest } from "./types/mergeRequest";
 import { MergeResponse } from "./types/mergeResponse";
 import { parseDouble } from "./utils/parse";
+import { CharCode } from "./constants/utf8";
 
 export async function run({
   end,
@@ -49,16 +48,16 @@ export async function run({
     const N = chunk.length;
     for (let i = 0; i < N; ++i) {
       // If not newline
-      if (chunk[i] !== CHAR_NEWLINE) {
+      if (chunk[i] !== CharCode.NEWLINE) {
         buffer[bufI++] = chunk[i];
         continue;
       }
 
       // Get semicolon
       let semI = bufI - 4;
-      if (buffer[semI - 2] === CHAR_SEMICOLON) {
+      if (buffer[semI - 2] === CharCode.SEMICOLON) {
         semI -= 2;
-      } else if (buffer[semI - 1] === CHAR_SEMICOLON) {
+      } else if (buffer[semI - 1] === CharCode.SEMICOLON) {
         semI -= 1;
       }
 
