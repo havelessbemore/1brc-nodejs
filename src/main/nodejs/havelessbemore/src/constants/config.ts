@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
+
 export const enum Config {
   /**
    * The minimum value in bytes for `highWaterMark`.

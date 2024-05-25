@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
+
 import { UTF8 } from "./utf8";
 
 export const enum Trie {
