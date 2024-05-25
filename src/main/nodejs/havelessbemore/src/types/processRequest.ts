@@ -1,7 +1,7 @@
-import { Message } from "./message";
+import { Request } from "./request";
 
-export interface ProcessRequest extends Message {
-  type: "process_request";
+export interface ProcessRequest extends Request {
+  type: "process";
   end: number;
   filePath: string;
   id: number;

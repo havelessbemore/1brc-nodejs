@@ -55,7 +55,7 @@ export async function run(
   const tasks = new Array<Promise<unknown>>(maxWorkers);
   for (let i = 0; i < maxWorkers; ++i) {
     tasks[i] = exec<ProcessRequest, ProcessResponse>(workers[i], {
-      type: "process_request",
+      type: "process",
       counts,
       end: chunks[i][1],
       filePath,
@@ -77,7 +77,7 @@ export async function run(
       .then(() => tasks[b])
       .then(() =>
         exec<MergeRequest, MergeResponse>(workers[a], {
-          type: "merge_request",
+          type: "merge",
           a,
           b,
           counts,

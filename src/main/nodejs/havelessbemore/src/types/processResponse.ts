@@ -1,7 +1,6 @@
-import { Message } from "./message";
+import { Response } from "./response";
 
-export interface ProcessResponse extends Message {
-  type: "process_response";
+export interface ProcessResponse extends Response {
   id: number;
   trie: Int32Array;
 }

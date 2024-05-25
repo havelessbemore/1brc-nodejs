@@ -1,7 +1,7 @@
-import { Message } from "./message";
+import { Request } from "./request";
 
-export interface MergeRequest extends Message {
-  type: "merge_request";
+export interface MergeRequest extends Request {
+  type: "merge";
   a: number;
   b: number;
   // Shared memory

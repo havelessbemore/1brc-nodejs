@@ -26,7 +26,7 @@ export async function run({
 }: ProcessRequest): Promise<ProcessResponse> {
   // Check chunk size
   if (start >= end) {
-    return { type: "process_response", id, trie: createTrie(id, 0) };
+    return { id, trie: createTrie(id, 0) };
   }
 
   // Initialize constants
@@ -96,7 +96,7 @@ export async function run({
     sums[index >> 2] += temp;
   }
 
-  return { type: "process_response", id, trie };
+  return { id, trie };
 }
 
 export function merge({
@@ -117,5 +117,5 @@ export function merge({
     sums[ai >> 2] += sums[bi >> 2];
   }
   const ids = mergeLeft(tries, a, b, mergeStations);
-  return { type: "merge_response", ids, tries };
+  return { ids, tries };
 }
