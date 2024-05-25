@@ -53,4 +53,4 @@ npm install
 npm run build
 ```
 
-Output will be in the `dist/` directory. Both CommonJs (`.cjs`) and ECMAScript (`.mjs`) modules are created.
+Output is built in the `dist/` directory as ECMAScript (`.mjs`) modules.
