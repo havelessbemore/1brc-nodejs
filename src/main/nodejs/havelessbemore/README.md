@@ -14,8 +14,10 @@
 
 ### Results
 
-- Min: 13.9s
-- Avg: 14.5s
+- Min: 13.7s
+- Avg: 14.2s
+- Max: 14.6s
+- Samples: 5 consecutive runs
 
 #### Specs:
 

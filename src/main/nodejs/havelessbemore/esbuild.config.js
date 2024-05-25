@@ -7,7 +7,7 @@ const options = {
   entryPoints: ["src/index.ts"],
   bundle: true,
   drop: ["console"],
-  minify: false,
+  minify: true,
   platform: "node",
   sourcemap: true,
   target: "ESNext",
