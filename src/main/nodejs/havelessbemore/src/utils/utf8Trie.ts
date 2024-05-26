@@ -1,13 +1,13 @@
 import { WriteStream } from "node:fs";
 
-import { UTF8 } from "../constants/utf8";
 import {
   Trie,
   TrieNodeProto,
   TrieProto,
   TriePointerProto,
   TrieRedirectProto,
-} from "../constants/utf8Trie";
+  UTF8,
+} from "../constants/utf8";
 
 export function add(
   trie: Int32Array,

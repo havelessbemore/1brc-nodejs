@@ -6,8 +6,7 @@ import type { ProcessRequest } from "./types/processRequest";
 import type { ProcessResponse } from "./types/processResponse";
 
 import { BRC } from "./constants/brc";
-import { CharCode } from "./constants/utf8";
-import { Trie, TrieNodeProto } from "./constants/utf8Trie";
+import { CharCode, Trie, TrieNodeProto } from "./constants/utf8";
 import { parseDouble } from "./utils/parse";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
