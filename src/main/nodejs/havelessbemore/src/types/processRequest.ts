@@ -3,7 +3,7 @@ import { Request, RequestType } from "./request";
 export interface ProcessRequest extends Request {
   type: RequestType.PROCESS;
   end: number;
-  fd: number;
+  filePath: string,
   id: number;
   start: number;
   // Shared memory

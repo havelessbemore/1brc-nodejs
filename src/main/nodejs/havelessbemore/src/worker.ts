@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { open } from "fs/promises";
 
 import type { MergeRequest } from "./types/mergeRequest";
 import type { MergeResponse } from "./types/mergeResponse";
@@ -13,7 +13,7 @@ import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
 
 export async function run({
   end,
-  fd,
+  filePath,
   id,
   start,
   // Shared memory
@@ -30,41 +30,35 @@ export async function run({
   // Initialize constants
   let trie = createTrie(id);
   let stations = id * BRC.MAX_STATIONS + 1;
-  const buffer = Buffer.allocUnsafe(BRC.MAX_ENTRY_LEN);
 
-  // Create readstream options
-  const opts = {
-    autoClose: false,
-    fd,
-    start,
-    end: end - 1,
-    highWaterMark: getHighWaterMark(end - start),
-  };
+  const file = await open(filePath, "r");
+  const chunkSize = getHighWaterMark(end - start);
+  const chunk = Buffer.allocUnsafe(chunkSize + BRC.MAX_ENTRY_LEN);
 
   // For each chunk
-  let bufI = -1;
+  let i = 0;
+  let minI = 0;
   let leaf: number;
-  for await (const chunk of createReadStream("", opts)) {
-    // For each byte
-    const N = chunk.length;
-    for (let i = 0; i < N; ++i) {
-      // Add byte to buffer
-      buffer[++bufI] = chunk[i];
+  while (start < end) {
+    const res = await file.read(chunk, i, chunkSize, start);
+    start += res.bytesRead;
 
+    for (const N = i + res.bytesRead; i < N; ++i) {
       // If newline
       if (chunk[i] === CharCode.NEWLINE) {
+
         // Get semicolon
-        let semI = bufI - 5;
-        if (buffer[semI] !== CharCode.SEMICOLON) {
-          semI += 1 | (1 + ~(buffer[semI - 1] === CharCode.SEMICOLON));
+        let semI = i - 5;
+        if (chunk[semI] !== CharCode.SEMICOLON) {
+          semI += 1 | (1 + ~(chunk[semI - 1] === CharCode.SEMICOLON));
         }
 
         // Get temperature
-        const tempV = parseDouble(buffer, semI + 1, bufI);
-        bufI = -1;
+        const tempV = parseDouble(chunk, semI + 1, i);
 
         // Add the station's name to the trie and get leaf index
-        [trie, leaf] = add(trie, buffer, 0, semI);
+        [trie, leaf] = add(trie, chunk, minI, semI);
+        minI = i + 1;
 
         // If the station existed
         if (trie[leaf + TrieNodeProto.VALUE_IDX] !== Trie.NULL) {
@@ -77,6 +71,9 @@ export async function run({
         }
       }
     }
+    chunk.copyWithin(0, minI, i);
+    i -= minI;
+    minI = 0;
   }
 
   function newStation(index: number, temp: number): void {
@@ -94,6 +91,7 @@ export async function run({
     sums[index >> 2] += temp;
   }
 
+  await file.close();
   return { id, trie };
 }
 
