@@ -1,4 +1,6 @@
 import { WriteStream, createWriteStream } from "node:fs";
+import { open } from "node:fs/promises";
+import { stdout } from "node:process";
 
 import type { MergeRequest } from "./types/mergeRequest";
 import type { MergeResponse } from "./types/mergeResponse";
@@ -20,9 +22,12 @@ export async function run(
   // Sanitize number of workers
   maxWorkers = clamp(maxWorkers, Config.WORKERS_MIN, Config.WORKERS_MAX);
 
+  // Open the given file
+  const file = await open(filePath, "r");
+
   // Split the file into chunks. Creates 1 or fewer chunks per worker
   const chunks = await getFileChunks(
-    filePath,
+    file,
     maxWorkers,
     BRC.MAX_ENTRY_LEN,
     Config.CHUNK_SIZE_MIN,
@@ -52,7 +57,7 @@ export async function run(
       type: "process",
       counts,
       end: chunks[i][1],
-      filePath,
+      fd: file.fd,
       id: i,
       maxes,
       mins,
@@ -88,9 +93,12 @@ export async function run(
   // Wait for completion
   await Promise.all(tasks);
 
+  // Close the file
+  await file.close();
+
   // Print results
   const out = createWriteStream(outPath, {
-    fd: outPath.length < 1 ? 1 : undefined,
+    fd: outPath.length < 1 ? stdout.fd : undefined,
     flags: "a",
     highWaterMark: Config.HIGH_WATER_MARK_OUT,
   });

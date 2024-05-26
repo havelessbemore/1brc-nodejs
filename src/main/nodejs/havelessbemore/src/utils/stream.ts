@@ -1,4 +1,4 @@
-import { open } from "fs/promises";
+import { FileHandle } from "fs/promises";
 
 import { Config } from "../constants/config";
 import { CharCode } from "../constants/utf8";
@@ -35,48 +35,41 @@ export function clamp(value: number, min: number, max: number): number {
  * @throws Will throw an error if the file cannot be opened or read.
  */
 export async function getFileChunks(
-  filePath: string,
+  file: FileHandle,
   target: number,
   maxLineLength: number,
   minSize = 0,
 ): Promise<[number, number][]> {
-  // Open the given file
-  const file = await open(filePath);
-  try {
-    // Get the file's size
-    const size = (await file.stat()).size;
-    // Calculate each chunk's target size
-    const chunkSize = Math.max(minSize, Math.floor(size / target));
-    // Initialize constants
-    const buffer = Buffer.allocUnsafe(maxLineLength);
-    const chunks: [number, number][] = [];
-    // Traverse the file, visiting each chunk's end index (exclusive)
-    let start = 0;
-    for (let end = chunkSize; end < size; end += chunkSize) {
-      // Read a line at the intended end index
-      const res = await file.read(buffer, 0, maxLineLength, end);
-      // Find the nearest newline ('\n') character
-      const newline = buffer.indexOf(CharCode.NEWLINE);
-      // If found
-      if (newline >= 0 && newline < res.bytesRead) {
-        // Align end with the newline
-        end += newline + 1;
-        // Add the chunk
-        chunks.push([start, end]);
-        // Update the start index for the next chunk
-        start = end;
-      }
+  // Get the file's size
+  const size = (await file.stat()).size;
+  // Calculate each chunk's target size
+  const chunkSize = Math.max(minSize, Math.floor(size / target));
+  // Initialize constants
+  const buffer = Buffer.allocUnsafe(maxLineLength);
+  const chunks: [number, number][] = [];
+  // Traverse the file, visiting each chunk's end index (exclusive)
+  let start = 0;
+  for (let end = chunkSize; end < size; end += chunkSize) {
+    // Read a line at the intended end index
+    const res = await file.read(buffer, 0, maxLineLength, end);
+    // Find the nearest newline ('\n') character
+    const newline = buffer.indexOf(CharCode.NEWLINE);
+    // If found
+    if (newline >= 0 && newline < res.bytesRead) {
+      // Align end with the newline
+      end += newline + 1;
+      // Add the chunk
+      chunks.push([start, end]);
+      // Update the start index for the next chunk
+      start = end;
     }
-    // Add the last chunk, if necessary
-    if (start < size) {
-      chunks.push([start, size]);
-    }
-    // Return chunks
-    return chunks;
-  } finally {
-    // Always close the file before returning
-    await file.close();
   }
+  // Add the last chunk, if necessary
+  if (start < size) {
+    chunks.push([start, size]);
+  }
+  // Return chunks
+  return chunks;
 }
 
 /**

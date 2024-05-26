@@ -13,7 +13,7 @@ import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
 
 export async function run({
   end,
-  filePath,
+  fd,
   id,
   start,
   // Shared memory
@@ -32,28 +32,27 @@ export async function run({
   let stations = id * BRC.MAX_STATIONS + 1;
   const buffer = Buffer.allocUnsafe(BRC.MAX_ENTRY_LEN);
 
-  // Create the chunk stream
-  const stream = createReadStream(filePath, {
+  // Create readstream options
+  const opts = {
+    autoClose: false,
+    fd,
     start,
     end: end - 1,
     highWaterMark: getHighWaterMark(end - start),
-  });
+  };
 
   // For each chunk
   let bufI = -1;
   let leaf: number;
-  for await (const chunk of stream) {
-
+  for await (const chunk of createReadStream("", opts)) {
     // For each byte
     const N = chunk.length;
     for (let i = 0; i < N; ++i) {
-      
       // Add byte to buffer
       buffer[++bufI] = chunk[i];
 
       // If newline
       if (chunk[i] === CharCode.NEWLINE) {
-
         // Get semicolon
         let semI = bufI - 5;
         if (buffer[semI] !== CharCode.SEMICOLON) {
