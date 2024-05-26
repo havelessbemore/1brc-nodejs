@@ -1,7 +1,7 @@
-import { Request } from "./request";
+import { Request, RequestType } from "./request";
 
 export interface ProcessRequest extends Request {
-  type: "process";
+  type: RequestType.PROCESS;
   end: number;
   fd: number;
   id: number;

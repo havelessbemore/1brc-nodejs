@@ -1,7 +1,7 @@
-import { Request } from "./request";
+import { Request, RequestType } from "./request";
 
 export interface MergeRequest extends Request {
-  type: "merge";
+  type: RequestType.MERGE;
   a: number;
   b: number;
   // Shared memory

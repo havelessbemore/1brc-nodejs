@@ -12,6 +12,7 @@ import { Config } from "./constants/config";
 import { clamp, getFileChunks } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
 import { createWorker, exec } from "./utils/worker";
+import { RequestType } from "./types/request";
 
 export async function run(
   filePath: string,
@@ -54,7 +55,7 @@ export async function run(
     const worker = createWorker(workerPath);
     // Process the chunk
     tasks[i] = exec<ProcessRequest, ProcessResponse>(worker, {
-      type: "process",
+      type: RequestType.PROCESS,
       counts,
       end: chunks[i][1],
       fd: file.fd,
@@ -70,7 +71,7 @@ export async function run(
       // Merge with other tries
       while (unmerged.length > 0) {
         const res = await exec<MergeRequest, MergeResponse>(worker, {
-          type: "merge",
+          type: RequestType.MERGE,
           a,
           b: unmerged.pop()!,
           counts,

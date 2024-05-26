@@ -69,24 +69,29 @@ export const enum UTF8 {
     B0_2B_MAX = 0b11011111,
     B0_3B_MAX = 0b11101111,
     B0_4B_MAX = 0b11110111,
-    */
+  */
 }
 
 export const enum Trie {
   /**
-   * Represents a `null` trie element.
+   * The size in bytes of each element in the trie.
    */
-  NULL = 0,
+  BYTES_PER_ELEMENT = 4, // Int32Array.BYTES_PER_ELEMENT,
 
   /**
-   * The default initial size of a trie.
+   * The default / initial size of a trie.
    */
   DEFAULT_SIZE = 655360, // 2.5 MiB
 
   /**
    * The growth factor for resizing a trie.
    */
-  GROWTH_FACTOR = 1.6180339887,
+  GROWTH_FACTOR = 1.618033988749895, // Phi; (1 + sqrt(5)) / 2
+
+  /**
+   * Represents a `null` trie element.
+   */
+  NULL = 0,
 }
 
 /**

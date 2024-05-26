@@ -91,7 +91,7 @@ export function mergeLeft(
   bt: number,
   mergeFn: (ai: number, bi: number) => void,
 ): number[] {
-  const grown = new Set<number>();
+  const grown: number[] = [];
   const queue: [number, number, number, number][] = [
     [at, TrieProto.ROOT_IDX, bt, TrieProto.ROOT_IDX],
   ];
@@ -137,7 +137,7 @@ export function mergeLeft(
             li = tries[at][TrieProto.SIZE_IDX];
             if (li + TrieRedirectProto.MEM > tries[at].length) {
               tries[at] = grow(tries[at], li + TrieRedirectProto.MEM);
-              grown.add(at);
+              grown.push(at);
             }
             tries[at][TrieProto.SIZE_IDX] += TrieRedirectProto.MEM;
             // Attach redirect
@@ -163,7 +163,7 @@ export function mergeLeft(
     }
     queue.splice(0, Q);
   } while (queue.length > 0);
-  return Array.from(grown);
+  return grown;
 }
 
 export function print(
