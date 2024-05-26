@@ -4,23 +4,23 @@ export const enum Config {
   /**
    * The minimum value in bytes for `highWaterMark`.
    */
-  HIGH_WATER_MARK_MIN = 16384, // 16KiB
+  HIGH_WATER_MARK_MIN = 16384, // 16 KiB
 
   /**
    * The maximum value in bytes for `highWaterMark`.
    */
-  HIGH_WATER_MARK_MAX = 1048576, // 1MiB
+  HIGH_WATER_MARK_MAX = 8388608, // 8 MiB
 
   /**
    * The `highWaterMark` for write streams.
    */
-  HIGH_WATER_MARK_OUT = 1048576, // 1MiB
+  HIGH_WATER_MARK_OUT = 1048576, // 1 MiB
 
   /**
    * The ratio of the file size to use for calculating
    * the `highWaterMark` of a stream.
    */
-  HIGH_WATER_MARK_RATIO = 0.000152,
+  HIGH_WATER_MARK_RATIO = 0.00625,
 
   /**
    * The minimum size in bytes of a file chunk.
