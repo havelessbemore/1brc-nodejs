@@ -46,7 +46,6 @@ export async function run({
     for (const N = i + res.bytesRead; i < N; ++i) {
       // If newline
       if (chunk[i] === CharCode.NEWLINE) {
-
         // Get semicolon
         let semI = i - 5;
         if (chunk[semI] !== CharCode.SEMICOLON) {
