@@ -40,39 +40,42 @@ export async function run({
   });
 
   // For each chunk
-  let bufI = 0;
+  let bufI = -1;
   let leaf: number;
   for await (const chunk of stream) {
+
     // For each byte
     const N = chunk.length;
     for (let i = 0; i < N; ++i) {
-      // If not newline
-      if (chunk[i] !== CharCode.NEWLINE) {
-        buffer[bufI++] = chunk[i];
-        continue;
-      }
+      
+      // Add byte to buffer
+      buffer[++bufI] = chunk[i];
 
-      // Get semicolon
-      let semI = bufI - 5;
-      if (buffer[semI] !== CharCode.SEMICOLON) {
-        semI += 1 | (1 + ~(buffer[semI - 1] === CharCode.SEMICOLON));
-      }
+      // If newline
+      if (chunk[i] === CharCode.NEWLINE) {
 
-      // Get temperature
-      const tempV = parseDouble(buffer, semI + 1, bufI);
-      bufI = 0;
+        // Get semicolon
+        let semI = bufI - 5;
+        if (buffer[semI] !== CharCode.SEMICOLON) {
+          semI += 1 | (1 + ~(buffer[semI - 1] === CharCode.SEMICOLON));
+        }
 
-      // Add the station's name to the trie and get leaf index
-      [trie, leaf] = add(trie, buffer, 0, semI);
+        // Get temperature
+        const tempV = parseDouble(buffer, semI + 1, bufI);
+        bufI = -1;
 
-      // If the station existed
-      if (trie[leaf + TrieNodeProto.VALUE_IDX] !== Trie.NULL) {
-        // Update the station's value
-        updateStation(trie[leaf + TrieNodeProto.VALUE_IDX], tempV);
-      } else {
-        // Add the new station's value
-        trie[leaf + TrieNodeProto.VALUE_IDX] = stations;
-        newStation(stations++, tempV);
+        // Add the station's name to the trie and get leaf index
+        [trie, leaf] = add(trie, buffer, 0, semI);
+
+        // If the station existed
+        if (trie[leaf + TrieNodeProto.VALUE_IDX] !== Trie.NULL) {
+          // Update the station's value
+          updateStation(trie[leaf + TrieNodeProto.VALUE_IDX], tempV);
+        } else {
+          // Add the new station's value
+          trie[leaf + TrieNodeProto.VALUE_IDX] = stations;
+          newStation(stations++, tempV);
+        }
       }
     }
   }
