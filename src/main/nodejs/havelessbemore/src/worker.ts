@@ -53,11 +53,9 @@ export async function run({
       }
 
       // Get semicolon
-      let semI = bufI - 4;
-      if (buffer[semI - 2] === CharCode.SEMICOLON) {
-        semI -= 2;
-      } else if (buffer[semI - 1] === CharCode.SEMICOLON) {
-        semI -= 1;
+      let semI = bufI - 5;
+      if (buffer[semI] !== CharCode.SEMICOLON) {
+        semI += 1 | (1 + ~(buffer[semI - 1] === CharCode.SEMICOLON));
       }
 
       // Get temperature
