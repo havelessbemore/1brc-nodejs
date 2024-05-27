@@ -23,11 +23,6 @@ export const enum Config {
   HIGH_WATER_MARK_RATIO = 0.00625,
 
   /**
-   * The minimum size in bytes of a file chunk.
-   */
-  CHUNK_SIZE_MIN = HIGH_WATER_MARK_MIN,
-
-  /**
    * The minimum number of web workers (inclusive).
    */
   WORKERS_MIN = 1,
@@ -45,8 +40,7 @@ export const enum Config {
    *
    * There is not much basis for the current value.
    * Development was done with at most 8 workers and
-   * a reasonable input file, with memory never exceeding
-   * 20 MiB total across all workers.
+   * a reasonable input file.
    *
    * In theory, the challenge constraints allow for input
    * files that would require each worker using upwards of

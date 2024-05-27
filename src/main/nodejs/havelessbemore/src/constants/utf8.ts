@@ -37,14 +37,14 @@ export const enum UTF8 {
    *
    * @see {@link https://en.wikipedia.org/wiki/Unicode_control_characters#Category_%22Cc%22_control_codes_(C0_and_C1) | Control Codes}
    */
-  BYTE_MIN = 32,
+  BYTE_MIN = 0x20,
 
   /**
    * The maximum value of a UTF-8 byte.
    *
    * @see {@link https://en.wikipedia.org/wiki/UTF-8#Encoding | UTF-8 Encoding}
    */
-  BYTE_MAX = 0b11110111,
+  BYTE_MAX = 0xf7,
 
   /**
    * The number of possible values in a UTF-8 byte.

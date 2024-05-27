@@ -31,7 +31,7 @@ export async function run(
     file,
     maxWorkers,
     BRC.MAX_ENTRY_LEN,
-    Config.CHUNK_SIZE_MIN,
+    Config.HIGH_WATER_MARK_MIN,
   );
 
   // Adjust the number of workers to the number of chunks
