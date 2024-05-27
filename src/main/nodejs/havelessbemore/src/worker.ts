@@ -22,7 +22,6 @@ export function run({
   mins,
   sums,
 }: ProcessRequest): ProcessResponse {
-
   // Initialize constants
   const chunkSize = getHighWaterMark(end - start);
   const chunk = Buffer.allocUnsafe(chunkSize + BRC.MAX_ENTRY_LEN);
@@ -31,22 +30,19 @@ export function run({
   let bufI = 0;
   let leaf = 0;
   let minI = 0;
-  let stations = id * BRC.MAX_STATIONS + 1;
+  let stations = id * BRC.MAX_STATIONS;
   let trie = createTrie(id);
 
   // For each chunk
   while (start < end) {
-
     // Read the chunk into memory
     const bytesRead = readSync(fd, chunk, bufI, chunkSize, start);
     start += bytesRead;
 
     // For each byte
     for (const N = bufI + bytesRead; bufI < N; ++bufI) {
-
       // If newline
       if (chunk[bufI] === CharCode.NEWLINE) {
-
         // Get semicolon
         let semI = bufI - 5;
         if (chunk[semI] !== CharCode.SEMICOLON) {
@@ -60,17 +56,17 @@ export function run({
         minI = bufI + 1;
 
         // Get temperature
-        const tempV = parseDouble(chunk, semI + 1, bufI);
+        const temp = parseDouble(chunk, semI + 1, bufI);
 
         // If the station existed
         leaf += TrieNodeProto.VALUE_IDX;
         if (trie[leaf] !== Trie.NULL) {
           // Update the station's value
-          updateStation(trie[leaf], tempV);
+          updateStation(trie[leaf], temp);
         } else {
           // Add the new station's value
-          trie[leaf] = stations;
-          newStation(stations++, tempV);
+          trie[leaf] = ++stations;
+          newStation(stations, temp);
         }
       }
     }
@@ -114,7 +110,7 @@ export function merge({
     ai <<= 3;
     bi <<= 3;
     mins[ai] = mins[ai] <= mins[bi] ? mins[ai] : mins[bi];
-    maxes[ai] = maxes[ai] >= maxes[bi] ? maxes[ai] : maxes[bi];
+    maxes[ai] = mins[ai] >= mins[bi] ? mins[ai] : mins[bi];
     counts[ai >> 1] += counts[bi >> 1];
     sums[ai >> 2] += sums[bi >> 2];
   }
