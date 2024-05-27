@@ -113,8 +113,8 @@ export function merge({
   function mergeStations(ai: number, bi: number): void {
     ai <<= 3;
     bi <<= 3;
-    mins[ai] = Math.min(mins[ai], mins[bi]);
-    maxes[ai] = Math.max(maxes[ai], maxes[bi]);
+    mins[ai] = mins[ai] <= mins[bi] ? mins[ai] : mins[bi];
+    maxes[ai] = maxes[ai] >= maxes[bi] ? maxes[ai] : maxes[bi];
     counts[ai >> 1] += counts[bi >> 1];
     sums[ai >> 2] += sums[bi >> 2];
   }
