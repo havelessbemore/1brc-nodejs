@@ -1,4 +1,4 @@
-import { open } from "fs/promises";
+import { readSync } from "fs";
 
 import type { MergeRequest } from "./types/mergeRequest";
 import type { MergeResponse } from "./types/mergeResponse";
@@ -11,9 +11,9 @@ import { parseDouble } from "./utils/parse";
 import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
 
-export async function run({
+export function run({
   end,
-  filePath,
+  fd,
   id,
   start,
   // Shared memory
@@ -21,57 +21,65 @@ export async function run({
   maxes,
   mins,
   sums,
-}: ProcessRequest): Promise<ProcessResponse> {
-  // Check chunk size
-  if (start >= end) {
-    return { id, trie: createTrie(id, 0) };
-  }
+}: ProcessRequest): ProcessResponse {
 
   // Initialize constants
-  let trie = createTrie(id);
-  let stations = id * BRC.MAX_STATIONS + 1;
-
-  const file = await open(filePath, "r");
   const chunkSize = getHighWaterMark(end - start);
   const chunk = Buffer.allocUnsafe(chunkSize + BRC.MAX_ENTRY_LEN);
 
-  // For each chunk
-  let i = 0;
+  // Initialize variables
+  let bufI = 0;
+  let leaf = 0;
   let minI = 0;
-  let leaf: number;
-  while (start < end) {
-    const res = await file.read(chunk, i, chunkSize, start);
-    start += res.bytesRead;
+  let stations = id * BRC.MAX_STATIONS + 1;
+  let trie = createTrie(id);
 
-    for (const N = i + res.bytesRead; i < N; ++i) {
+  // For each chunk
+  while (start < end) {
+
+    // Read the chunk into memory
+    const bytesRead = readSync(fd, chunk, bufI, chunkSize, start);
+    start += bytesRead;
+
+    // For each byte
+    for (const N = bufI + bytesRead; bufI < N; ++bufI) {
+
       // If newline
-      if (chunk[i] === CharCode.NEWLINE) {
+      if (chunk[bufI] === CharCode.NEWLINE) {
+
         // Get semicolon
-        let semI = i - 5;
+        let semI = bufI - 5;
         if (chunk[semI] !== CharCode.SEMICOLON) {
           semI += 1 | (1 + ~(chunk[semI - 1] === CharCode.SEMICOLON));
         }
 
-        // Get temperature
-        const tempV = parseDouble(chunk, semI + 1, i);
-
-        // Add the station's name to the trie and get leaf index
+        // Add the station's name to the trie and get leaf
         [trie, leaf] = add(trie, chunk, minI, semI);
-        minI = i + 1;
+
+        // Update next entry's min
+        minI = bufI + 1;
+
+        // Get temperature
+        const tempV = parseDouble(chunk, semI + 1, bufI);
 
         // If the station existed
-        if (trie[leaf + TrieNodeProto.VALUE_IDX] !== Trie.NULL) {
+        leaf += TrieNodeProto.VALUE_IDX;
+        if (trie[leaf] !== Trie.NULL) {
           // Update the station's value
-          updateStation(trie[leaf + TrieNodeProto.VALUE_IDX], tempV);
+          updateStation(trie[leaf], tempV);
         } else {
           // Add the new station's value
-          trie[leaf + TrieNodeProto.VALUE_IDX] = stations;
+          trie[leaf] = stations;
           newStation(stations++, tempV);
         }
       }
     }
-    chunk.copyWithin(0, minI, i);
-    i -= minI;
+
+    // Prepend any incomplete entry to the next chunk
+    chunk.copyWithin(0, minI, bufI);
+
+    // Update indices for the next chunk
+    bufI -= minI;
     minI = 0;
   }
 
@@ -90,7 +98,6 @@ export async function run({
     sums[index >> 2] += temp;
   }
 
-  await file.close();
   return { id, trie };
 }
 

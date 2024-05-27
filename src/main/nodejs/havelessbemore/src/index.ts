@@ -13,9 +13,9 @@ if (isMainThread) {
   const workerPath = fileURLToPath(import.meta.url);
   runMain(process.argv[2], workerPath, availableParallelism());
 } else {
-  parentPort!.addListener("message", async (msg: Request) => {
+  parentPort!.addListener("message", (msg: Request) => {
     if (msg.type === RequestType.PROCESS) {
-      parentPort!.postMessage(await runWorker(msg as ProcessRequest));
+      parentPort!.postMessage(runWorker(msg as ProcessRequest));
     } else if (msg.type === RequestType.MERGE) {
       parentPort!.postMessage(merge(msg as MergeRequest));
     } else {

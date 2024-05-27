@@ -57,7 +57,7 @@ export async function run(
       type: RequestType.PROCESS,
       counts,
       end: chunks[i][1],
-      filePath,
+      fd,
       id: i,
       maxes,
       mins,
