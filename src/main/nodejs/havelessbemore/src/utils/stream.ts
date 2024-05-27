@@ -1,5 +1,4 @@
-import { FileHandle } from "fs/promises";
-
+import { fstatSync, readSync } from "fs";
 import { Config } from "../constants/config";
 import { CharCode } from "../constants/utf8";
 
@@ -34,14 +33,14 @@ export function clamp(value: number, min: number, max: number): number {
  *
  * @throws Will throw an error if the file cannot be opened or read.
  */
-export async function getFileChunks(
-  file: FileHandle,
+export function getFileChunks(
+  fd: number,
   target: number,
   maxLineLength: number,
   minSize = 0,
-): Promise<[number, number][]> {
+): [number, number][] {
   // Get the file's size
-  const size = (await file.stat()).size;
+  const size = fstatSync(fd).size;
   // Calculate each chunk's target size
   const chunkSize = Math.max(minSize, Math.floor(size / target));
   // Initialize constants
@@ -51,11 +50,11 @@ export async function getFileChunks(
   let start = 0;
   for (let end = chunkSize; end < size; end += chunkSize) {
     // Read a line at the intended end index
-    const res = await file.read(buffer, 0, maxLineLength, end);
+    const bytesRead = readSync(fd, buffer, 0, maxLineLength, end);
     // Find the nearest newline ('\n') character
     const newline = buffer.indexOf(CharCode.NEWLINE);
     // If found
-    if (newline >= 0 && newline < res.bytesRead) {
+    if (newline >= 0 && newline < bytesRead) {
       // Align end with the newline
       end += newline + 1;
       // Add the chunk

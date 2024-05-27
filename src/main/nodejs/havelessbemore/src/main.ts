@@ -1,5 +1,4 @@
-import { WriteStream, createWriteStream } from "node:fs";
-import { open } from "node:fs/promises";
+import { closeSync, createWriteStream, openSync, WriteStream } from "node:fs";
 import { stdout } from "node:process";
 
 import type { MergeRequest } from "./types/mergeRequest";
@@ -24,11 +23,11 @@ export async function run(
   maxWorkers = clamp(maxWorkers, Config.WORKERS_MIN, Config.WORKERS_MAX);
 
   // Open the given file
-  const file = await open(filePath, "r");
+  const fd = openSync(filePath, "r");
 
   // Split the file into chunks. Creates 1 or fewer chunks per worker
-  const chunks = await getFileChunks(
-    file,
+  const chunks = getFileChunks(
+    fd,
     maxWorkers,
     BRC.MAX_ENTRY_LEN,
     Config.HIGH_WATER_MARK_MIN,
@@ -67,7 +66,7 @@ export async function run(
     }).then(async (res) => {
       // Add result to trie array
       const a = res.id;
-      tries[res.id] = res.trie;
+      tries[a] = res.trie;
       // Merge with other tries
       while (unmerged.length > 0) {
         const res = await exec<MergeRequest, MergeResponse>(worker, {
@@ -95,7 +94,7 @@ export async function run(
   await Promise.all(tasks);
 
   // Close the file
-  await file.close();
+  closeSync(fd);
 
   // Print results
   const out = createWriteStream(outPath, {
