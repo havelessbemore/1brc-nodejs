@@ -2,25 +2,24 @@
 
 export const enum Config {
   /**
-   * The minimum value in bytes for `highWaterMark`.
+   * The minimum value in bytes for a chunk size.
    */
-  HIGH_WATER_MARK_MIN = 16384, // 16 KiB
+  CHUNK_SIZE_MIN = 16384, // 16 KiB
 
   /**
-   * The maximum value in bytes for `highWaterMark`.
+   * The maximum value in bytes for a chunk size.
    */
-  HIGH_WATER_MARK_MAX = 8388608, // 8 MiB
+  CHUNK_SIZE_MAX = 8388608, // 8 MiB
+
+  /**
+   * The ratio of the page size for calculating chunk size.
+   */
+  CHUNK_SIZE_RATIO = 0.00625,
 
   /**
    * The `highWaterMark` for write streams.
    */
   HIGH_WATER_MARK_OUT = 1048576, // 1 MiB
-
-  /**
-   * The ratio of the file size to use for calculating
-   * the `highWaterMark` of a stream.
-   */
-  HIGH_WATER_MARK_RATIO = 0.00625,
 
   /**
    * The minimum number of web workers (inclusive).

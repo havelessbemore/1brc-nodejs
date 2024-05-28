@@ -8,18 +8,21 @@ import type { ProcessResponse } from "./types/processResponse";
 import { BRC } from "./constants/brc";
 import { CharCode, Trie, TrieNodeProto } from "./constants/utf8";
 import { parseDouble } from "./utils/parse";
-import { getHighWaterMark } from "./utils/stream";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
+import { lastIndexOf } from "./utils/stream";
 
 export function run({
-  end,
-  fd,
   id,
-  start,
+  // I/O
+  fd,
+  fileSize,
+  pageSize,
+  chunkSize,
   // Shared memory
   counts,
   maxes,
   mins,
+  page,
   sums,
 }: ProcessRequest): ProcessResponse {
   const newStation = (index: number, temp: number): void => {
@@ -38,63 +41,82 @@ export function run({
   };
 
   // Initialize constants
-  const chunkSize = getHighWaterMark(end - start);
   const chunk = Buffer.allocUnsafe(chunkSize + BRC.MAX_ENTRY_LEN);
-
-  // Initialize variables
-  let bufI = 0;
-  let leaf = 0;
-  let minI = 0;
   let stations = id * BRC.MAX_STATIONS;
   let trie = createTrie(id);
 
-  // For each chunk
-  while (start < end) {
-    // Read the chunk into memory
-    const bytesRead = Math.min(chunkSize, end - start);
-    readSync(fd, chunk, bufI, bytesRead, start);
-    start += bytesRead;
+  // For each page
+  while (true) {
 
-    // For each byte
-    for (const N = bufI + bytesRead; bufI < N; ++bufI) {
-      // If not newline
-      if (chunk[bufI] !== CharCode.NEWLINE) {
-        continue;
-      }
-
-      // Get semicolon
-      let semI = bufI - 5;
-      if (chunk[semI] !== CharCode.SEMICOLON) {
-        semI += 1 | (1 + ~(chunk[semI - 1] === CharCode.SEMICOLON));
-      }
-
-      // Add the station's name to the trie and get leaf
-      [trie, leaf] = add(trie, chunk, minI, semI);
-
-      // Update next entry's min
-      minI = bufI + 1;
-
-      // Get temperature
-      const temp = parseDouble(chunk, semI + 1, bufI);
-
-      // If the station existed
-      leaf += TrieNodeProto.VALUE_IDX;
-      if (trie[leaf] !== Trie.NULL) {
-        // Update the station's value
-        updateStation(trie[leaf], temp);
-      } else {
-        // Add the new station's value
-        trie[leaf] = ++stations;
-        newStation(stations, temp);
-      }
+    // Get page start
+    let start = pageSize * Atomics.add(page, 0, 1);
+    if (start >= fileSize) {
+      break;
     }
 
-    // Prepend any incomplete entry to the next chunk
-    chunk.copyWithin(0, minI, bufI);
+    // Get page end
+    const end = Math.min(fileSize, start + pageSize);
 
-    // Update indices for the next chunk
-    bufI -= minI;
-    minI = 0;
+    // Align start with entry
+    if (start > 0) {
+      start -= BRC.MAX_ENTRY_LEN;
+      readSync(fd, chunk, 0, BRC.MAX_ENTRY_LEN, start);
+      start += 1 + lastIndexOf(chunk, CharCode.NEWLINE, BRC.MAX_ENTRY_LEN);
+    }
+    
+    // Initialize variables
+    let bufI = 0;
+    let leaf = 0;
+    let minI = 0;
+
+    // For each chunk
+    while (start < end) {
+      // Read the chunk into memory
+      const bytesRead = Math.min(chunkSize, end - start);
+      readSync(fd, chunk, bufI, bytesRead, start);
+      start += bytesRead;
+
+      // For each byte
+      for (const N = bufI + bytesRead; bufI < N; ++bufI) {
+        // If not newline
+        if (chunk[bufI] !== CharCode.NEWLINE) {
+          continue;
+        }
+
+        // Get semicolon
+        let semI = bufI - 5;
+        if (chunk[semI] !== CharCode.SEMICOLON) {
+          semI += 1 | (1 + ~(chunk[semI - 1] === CharCode.SEMICOLON));
+        }
+
+        // Add the station's name to the trie and get leaf
+        [trie, leaf] = add(trie, chunk, minI, semI);
+
+        // Update next entry's min
+        minI = bufI + 1;
+
+        // Get temperature
+        const temp = parseDouble(chunk, semI + 1, bufI);
+
+        // If the station existed
+        leaf += TrieNodeProto.VALUE_IDX;
+        if (trie[leaf] !== Trie.NULL) {
+          // Update the station's value
+          updateStation(trie[leaf], temp);
+        } else {
+          // Add the new station's value
+          trie[leaf] = ++stations;
+          newStation(stations, temp);
+        }
+      }
+
+      // Prepend any incomplete entry to the next chunk
+      chunk.copyWithin(0, minI, bufI);
+
+      // Update indices for the next chunk
+      bufI -= minI;
+      minI = 0;
+    }
   }
 
   return { id, trie };

@@ -1,6 +1,4 @@
-import { fstatSync, readSync } from "fs";
 import { Config } from "../constants/config";
-import { CharCode } from "../constants/utf8";
 
 /**
  * Clamp a value within a given range.
@@ -16,75 +14,50 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Splits a file into `target` chunks or less.
+ * Calculates a chunk size based on a given page size.
  *
- * - Each chunk is aligned to a file line;
- * i.e. file start, newline ('\n') or file end.
- * - A chunk's size will be greater than or equal to `fileSize / target`.
- * - `target` chunks or less will be generated.
+ * @param size - The page size.
  *
- * @param filePath - The local path to the file to be chunked.
- * @param target - The target number of chunks to split the file into.
- * @param maxLineLength - The maximum length of a line in the file.
- * @param minSize - The minimum size of a chunk in bytes. Defaults to `0`.
- *
- * @returns A promise that resolves to an array of index pairs, where each
- * pair represents a chunk's start (inclusive) and end (exclusive) indices.
- *
- * @throws Will throw an error if the file cannot be opened or read.
+ * @returns The calculated chunk size.
  */
-export function getFileChunks(
-  fd: number,
-  target: number,
-  maxLineLength: number,
-  minSize = 0,
-): [number, number][] {
-  // Get the file's size
-  const size = fstatSync(fd).size;
-  // Calculate each chunk's target size
-  const chunkSize = Math.max(minSize, Math.floor(size / target));
-  // Initialize constants
-  const buffer = Buffer.allocUnsafe(maxLineLength);
-  const chunks: [number, number][] = [];
-  // Traverse the file, visiting each chunk's end index (exclusive)
-  let start = 0;
-  for (let end = chunkSize; end < size; end += chunkSize) {
-    // Read a line at the intended end index
-    const bytesRead = readSync(fd, buffer, 0, maxLineLength, end);
-    // Find the nearest newline ('\n') character
-    const newline = buffer.indexOf(CharCode.NEWLINE);
-    // If found
-    if (newline >= 0 && newline < bytesRead) {
-      // Align end with the newline
-      end += newline + 1;
-      // Add the chunk
-      chunks.push([start, end]);
-      // Update the start index for the next chunk
-      start = end;
-    }
-  }
-  // Add the last chunk, if necessary
-  if (start < size) {
-    chunks.push([start, size]);
-  }
-  // Return chunks
-  return chunks;
-}
-
-/**
- * Calculates an optimal highWaterMark value based on the given size.
- *
- * @param size - The size based on which the highWaterMark will be calculated.
- *
- * @returns The calculated highWaterMark value.
- */
-export function getHighWaterMark(size: number): number {
+export function getChunkSize(size: number): number {
   // Get size percentage
-  size *= Config.HIGH_WATER_MARK_RATIO;
+  size *= Config.CHUNK_SIZE_RATIO;
   // Get nearest power
   size = Math.round(Math.log2(size));
   // Calculate high water mark
   size = 2 ** size;
   // Clamp value
-  return clamp(size, Config.HIGH_WATER_MARK_MIN, Config.HIGH_WATER_MARK_MAX);
+  return clamp(size, Config.CHUNK_SIZE_MIN, Config.CHUNK_SIZE_MAX);
+}
+
+/**
+ * Calculates a page size based on a given file size.
+ *
+ * @param fileSize - The file size.
+ * @param workers - The number of workers the file will be split across.
+ *
+ * @returns The calculated page size.
+ */
+export function getPageSize(fileSize: number, workers: number): number {
+  return Math.max(Config.CHUNK_SIZE_MIN, Math.ceil(fileSize / workers));
+}
+
+/**
+ * Returns the index of the last occurrence of a 
+ * specified value in an array, or `-1` if it's not present.
+ * 
+ * @param array - The array to search through.
+ * @param searchElement — The value to locate in the array.
+ * @param max — The array index at which to begin searching backward.
+ * 
+ * @returns the index of the last occurrence, or `-1` if it's not present.
+ */
+export function lastIndexOf<T>(array: ArrayLike<T>, searchElement: T, max: number): number {
+  while (--max >= 0) {
+    if (array[max] === searchElement) {
+      return max;
+    }
+  }
+  return -1;
 }

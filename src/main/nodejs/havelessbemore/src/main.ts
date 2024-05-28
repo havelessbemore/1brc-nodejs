@@ -1,4 +1,4 @@
-import { closeSync, createWriteStream, openSync, WriteStream } from "node:fs";
+import { closeSync, createWriteStream, fstatSync, openSync, WriteStream } from "node:fs";
 import { stdout } from "node:process";
 
 import type { MergeRequest } from "./types/mergeRequest";
@@ -8,10 +8,10 @@ import type { ProcessResponse } from "./types/processResponse";
 
 import { BRC } from "./constants/brc";
 import { Config } from "./constants/config";
-import { clamp, getFileChunks } from "./utils/stream";
+import { RequestType } from "./types/request";
+import { clamp, getChunkSize, getPageSize } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
 import { createWorker, exec } from "./utils/worker";
-import { RequestType } from "./types/request";
 
 export async function run(
   filePath: string,
@@ -25,21 +25,17 @@ export async function run(
   // Open the given file
   const fd = openSync(filePath, "r");
 
-  // Split the file into chunks. Creates 1 or fewer chunks per worker
-  const chunks = getFileChunks(
-    fd,
-    maxWorkers,
-    BRC.MAX_ENTRY_LEN,
-    Config.HIGH_WATER_MARK_MIN,
-  );
-
-  // Adjust the number of workers to the number of chunks
-  maxWorkers = chunks.length;
+  // Get file stats
+  const fstats = fstatSync(fd);
+  const fileSize = fstats.size;
+  const pageSize = getPageSize(fileSize, maxWorkers);
+  const chunkSize = getChunkSize(pageSize);
 
   // Initialize data
   const valBuf = new SharedArrayBuffer(
     (BRC.MAX_STATIONS * maxWorkers + 1) << 4,
   );
+  const page = new Uint32Array(valBuf, 0, 1);
   const mins = new Int16Array(valBuf);
   const maxes = new Int16Array(valBuf, 2);
   const counts = new Uint32Array(valBuf, 4);
@@ -55,13 +51,17 @@ export async function run(
     // Process the chunk
     tasks[i] = exec<ProcessRequest, ProcessResponse>(worker, {
       type: RequestType.PROCESS,
-      counts,
-      end: chunks[i][1],
-      fd,
       id: i,
+      // I/O
+      fd,
+      fileSize,
+      pageSize,
+      chunkSize,
+      // Shared memory
+      counts,
       maxes,
       mins,
-      start: chunks[i][0],
+      page,
       sums,
     }).then(async (res) => {
       // Add result to trie array
