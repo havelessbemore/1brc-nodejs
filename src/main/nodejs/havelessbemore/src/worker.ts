@@ -63,21 +63,17 @@ export function run({
       readSync(fd, chunk, 0, BRC.MAX_ENTRY_LEN, start);
       start += 1 + lastIndexOf(chunk, CharCode.NEWLINE, BRC.MAX_ENTRY_LEN);
     }
-    
-    // Initialize variables
-    let bufI = 0;
-    let leaf = 0;
-    let minI = 0;
 
     // For each chunk
-    while (start < end) {
+    for (let bufI = 0; start < end; start += chunkSize) {
       // Read the chunk into memory
-      const bytesRead = Math.min(chunkSize, end - start);
-      readSync(fd, chunk, bufI, bytesRead, start);
-      start += bytesRead;
+      let maxI = Math.min(chunkSize, end - start);
+      maxI = bufI + readSync(fd, chunk, bufI, maxI, start);
 
       // For each byte
-      for (const N = bufI + bytesRead; bufI < N; ++bufI) {
+      let minI = 0;
+      for (let leaf: number; bufI < maxI; ++bufI) {
+        
         // If not newline
         if (chunk[bufI] !== CharCode.NEWLINE) {
           continue;
@@ -115,7 +111,6 @@ export function run({
 
       // Update indices for the next chunk
       bufI -= minI;
-      minI = 0;
     }
   }
 
