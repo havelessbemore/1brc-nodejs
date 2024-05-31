@@ -42,7 +42,7 @@ export function run({
   };
 
   // Initialize constants
-  const chunk = Buffer.allocUnsafe(chunkSize + BRC.MAX_ENTRY_LEN);
+  const chunk = Buffer.allocUnsafe(chunkSize + Config.SYS_PAGE_SIZE);
   let stations = id * BRC.MAX_STATIONS;
   let trie = createTrie(id);
 
@@ -64,16 +64,17 @@ export function run({
     for (const end = Math.min(fileSize, start + pageSize); start < end; start += chunkSize) {
 
       // Move incomplete entry to start of buffer
-      chunk.copyWithin(0, minI, bufI);
-      bufI -= minI;
-      minI = 0;
+      let maxI = Config.SYS_PAGE_SIZE - bufI + minI;
+      chunk.copyWithin(maxI, minI, bufI);
+      bufI = Config.SYS_PAGE_SIZE;
+      minI = maxI;
       
       // Read the chunk into memory
-      let maxI = Math.min(chunkSize, end - start);
-      maxI = bufI + readSync(fd, chunk, bufI, maxI, start);
+      maxI = Math.min(chunkSize, end - start);
+      maxI = readSync(fd, chunk, bufI, maxI, start);
 
       // For each byte
-      for (; bufI < maxI; ++bufI) {
+      for (maxI += bufI; bufI < maxI; ++bufI) {
         
         // If not newline
         if (chunk[bufI] !== CharCode.NEWLINE) {
