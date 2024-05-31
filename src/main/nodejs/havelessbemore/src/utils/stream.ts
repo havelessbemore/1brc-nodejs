@@ -22,11 +22,9 @@ export function clamp(value: number, min: number, max: number): number {
  */
 export function getChunkSize(size: number): number {
   // Get size percentage
-  size *= Config.CHUNK_SIZE_RATIO;
-  // Get nearest power
-  size = Math.round(Math.log2(size));
-  // Calculate high water mark
-  size = 2 ** size;
+  size = Math.ceil(size * Config.CHUNK_SIZE_RATIO);
+  // Align
+  size += Config.SYS_PAGE_SIZE - (size % Config.SYS_PAGE_SIZE);
   // Clamp value
   return clamp(size, Config.CHUNK_SIZE_MIN, Config.CHUNK_SIZE_MAX);
 }
@@ -40,7 +38,12 @@ export function getChunkSize(size: number): number {
  * @returns The calculated page size.
  */
 export function getPageSize(fileSize: number, workers: number): number {
-  return Math.max(Config.CHUNK_SIZE_MIN, Math.ceil(fileSize / workers));
+  // Divide into workers
+  fileSize = Math.ceil(fileSize / workers);
+  // Align
+  fileSize += Config.SYS_PAGE_SIZE - (fileSize % Config.SYS_PAGE_SIZE);
+  // Clamp value
+  return clamp(fileSize, Config.PAGE_SIZE_MIN, Config.PAGE_SIZE_MAX);
 }
 
 /**

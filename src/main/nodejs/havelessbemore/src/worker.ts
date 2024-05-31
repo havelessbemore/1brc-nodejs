@@ -10,6 +10,7 @@ import { CharCode, Trie, TrieNodeProto } from "./constants/utf8";
 import { parseDouble } from "./utils/parse";
 import { add, createTrie, mergeLeft } from "./utils/utf8Trie";
 import { lastIndexOf } from "./utils/stream";
+import { Config } from "./constants/config";
 
 export function run({
   id,
@@ -54,25 +55,25 @@ export function run({
       break;
     }
 
-    // Get page end
-    const end = Math.min(fileSize, start + pageSize);
-
     // Align start with entry
-    if (start > 0) {
-      start -= BRC.MAX_ENTRY_LEN;
-      readSync(fd, chunk, 0, BRC.MAX_ENTRY_LEN, start);
-      start += 1 + lastIndexOf(chunk, CharCode.NEWLINE, BRC.MAX_ENTRY_LEN);
-    }
+    let bufI = (start > 0) ? Config.SYS_PAGE_SIZE : 0;
+    readSync(fd, chunk, 0, bufI, start - bufI);
+    let minI = 1 + lastIndexOf(chunk, CharCode.NEWLINE, bufI);
 
     // For each chunk
-    for (let bufI = 0; start < end; start += chunkSize) {
+    for (const end = Math.min(fileSize, start + pageSize); start < end; start += chunkSize) {
+
+      // Move incomplete entry to start of buffer
+      chunk.copyWithin(0, minI, bufI);
+      bufI -= minI;
+      minI = 0;
+      
       // Read the chunk into memory
       let maxI = Math.min(chunkSize, end - start);
       maxI = bufI + readSync(fd, chunk, bufI, maxI, start);
 
       // For each byte
-      let minI = 0;
-      for (let leaf: number; bufI < maxI; ++bufI) {
+      for (; bufI < maxI; ++bufI) {
         
         // If not newline
         if (chunk[bufI] !== CharCode.NEWLINE) {
@@ -86,6 +87,7 @@ export function run({
         }
 
         // Add the station's name to the trie and get leaf
+        let leaf: number;
         [trie, leaf] = add(trie, chunk, minI, semI);
 
         // Update next entry's min
@@ -105,12 +107,6 @@ export function run({
           newStation(stations, temp);
         }
       }
-
-      // Prepend any incomplete entry to the next chunk
-      chunk.copyWithin(0, minI, bufI);
-
-      // Update indices for the next chunk
-      bufI -= minI;
     }
   }
 

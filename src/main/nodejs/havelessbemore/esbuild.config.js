@@ -6,7 +6,6 @@ import pkg from "./package.json" with { type: "json" };
 const options = {
   entryPoints: ["src/index.ts"],
   bundle: true,
-  drop: ["console"],
   minify: true,
   platform: "node",
   sourcemap: true,

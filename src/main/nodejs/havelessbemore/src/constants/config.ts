@@ -2,24 +2,47 @@
 
 export const enum Config {
   /**
-   * The minimum value in bytes for a chunk size.
+   * The system's page size (`getconf PAGE_SIZE`).
    */
-  CHUNK_SIZE_MIN = 16384, // 16 KiB
+  SYS_PAGE_SIZE = 16384, // 16 KiB,
+
+  /**
+   * The minimum value in bytes for a chunk size.
+   * 
+   * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
+   */
+  CHUNK_SIZE_MIN = SYS_PAGE_SIZE,
 
   /**
    * The maximum value in bytes for a chunk size.
+   * 
+   * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
    */
-  CHUNK_SIZE_MAX = 8388608, // 8 MiB
+  CHUNK_SIZE_MAX = 16777216, // 16 MiB
 
   /**
    * The ratio of the page size for calculating chunk size.
    */
-  CHUNK_SIZE_RATIO = 0.00625,
+  CHUNK_SIZE_RATIO = 0.00390625,
 
   /**
    * The `highWaterMark` for write streams.
    */
   HIGH_WATER_MARK_OUT = 1048576, // 1 MiB
+
+  /**
+   * The minimum value in bytes for a page size.
+   * 
+   * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
+   */
+  PAGE_SIZE_MIN = SYS_PAGE_SIZE,
+
+  /**
+   * The maximum value in bytes for a page size.
+   * 
+   * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
+   */
+  PAGE_SIZE_MAX = 4294967296, // 4 GiB
 
   /**
    * The minimum number of web workers (inclusive).
@@ -47,5 +70,5 @@ export const enum Config {
    * thus 1M trie nodes of ~0.85 KB each. This should be
    * considered when increasing the number of workers.
    */
-  WORKERS_MAX = 512,
+  WORKERS_MAX = 256,
 }
