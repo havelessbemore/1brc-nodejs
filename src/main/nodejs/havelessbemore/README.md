@@ -14,7 +14,7 @@
 
 ### Results
 
-- Min: 11.4s
+- Min: 11.1s
 - Avg: 11.9s
 - Max: 12.1s
 - Samples: 10 runs, 5s apart
@@ -30,7 +30,7 @@
   - OS: MacOS Sonoma
 
 - Other:
-  - NodeJS: v20.13.1
+  - NodeJS: v20.14.0
   - Input file: ~13.8 GB
 
 ## Build

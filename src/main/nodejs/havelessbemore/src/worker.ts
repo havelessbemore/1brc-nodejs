@@ -47,8 +47,8 @@ export function run({
   let trie = createTrie(id);
 
   // For each page
+  // eslint-disable-next-line no-constant-condition
   while (true) {
-
     // Get page start
     let start = pageSize * Atomics.add(page, 0, 1);
     if (start >= fileSize) {
@@ -56,26 +56,25 @@ export function run({
     }
 
     // Align start with entry
-    let bufI = (start > 0) ? Config.SYS_PAGE_SIZE : 0;
+    let bufI = start > 0 ? Config.SYS_PAGE_SIZE : 0;
     readSync(fd, chunk, 0, bufI, start - bufI);
-    let minI = 1 + lastIndexOf(chunk, CharCode.NEWLINE, bufI);
+    let minI = lastIndexOf(chunk, CharCode.NEWLINE, bufI);
 
     // For each chunk
-    for (const end = Math.min(fileSize, start + pageSize); start < end; start += chunkSize) {
-
+    const end = Math.min(fileSize, start + pageSize);
+    for (++minI; start < end; start += chunkSize) {
       // Move incomplete entry to start of buffer
       let maxI = Config.SYS_PAGE_SIZE - bufI + minI;
       chunk.copyWithin(maxI, minI, bufI);
       bufI = Config.SYS_PAGE_SIZE;
       minI = maxI;
-      
+
       // Read the chunk into memory
       maxI = Math.min(chunkSize, end - start);
       maxI = readSync(fd, chunk, bufI, maxI, start);
 
       // For each byte
       for (maxI += bufI; bufI < maxI; ++bufI) {
-        
         // If not newline
         if (chunk[bufI] !== CharCode.NEWLINE) {
           continue;

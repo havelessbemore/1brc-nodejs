@@ -47,16 +47,20 @@ export function getPageSize(fileSize: number, workers: number): number {
 }
 
 /**
- * Returns the index of the last occurrence of a 
+ * Returns the index of the last occurrence of a
  * specified value in an array, or `-1` if it's not present.
- * 
+ *
  * @param array - The array to search through.
  * @param searchElement — The value to locate in the array.
  * @param max — The array index at which to begin searching backward.
- * 
+ *
  * @returns the index of the last occurrence, or `-1` if it's not present.
  */
-export function lastIndexOf<T>(array: ArrayLike<T>, searchElement: T, max: number): number {
+export function lastIndexOf<T>(
+  array: ArrayLike<T>,
+  searchElement: T,
+  max: number,
+): number {
   while (--max >= 0) {
     if (array[max] === searchElement) {
       return max;

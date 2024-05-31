@@ -1,48 +1,68 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 
+export const enum Mem {
+  KB = 1024,
+  KB_2 = 2048,
+  KB_4 = 4096,
+  KB_8 = 8192,
+  KB_16 = 16384,
+  MB = 1048576,
+  MB_2 = 2097152,
+  MB_4 = 4194304,
+  MB_8 = 8388608,
+  MB_16 = 16777216,
+  MB_32 = 33554432,
+  MB_64 = 67108864,
+  MB_128 = 134217728,
+  MB_256 = 268435456,
+  MB_512 = 536870912,
+  GB = 1073741824,
+  GB_2 = 2147483648,
+}
+
 export const enum Config {
   /**
    * The system's page size (`getconf PAGE_SIZE`).
    */
-  SYS_PAGE_SIZE = 16384, // 16 KiB,
+  SYS_PAGE_SIZE = Mem.KB_16,
 
   /**
    * The minimum value in bytes for a chunk size.
-   * 
+   *
    * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
    */
   CHUNK_SIZE_MIN = SYS_PAGE_SIZE,
 
   /**
    * The maximum value in bytes for a chunk size.
-   * 
+   *
    * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
    */
-  CHUNK_SIZE_MAX = 16777216, // 16 MiB
+  CHUNK_SIZE_MAX = Mem.MB_16,
 
   /**
    * The ratio of the page size for calculating chunk size.
    */
-  CHUNK_SIZE_RATIO = 0.00390625,
+  CHUNK_SIZE_RATIO = 1,
 
   /**
    * The `highWaterMark` for write streams.
    */
-  HIGH_WATER_MARK_OUT = 1048576, // 1 MiB
+  HIGH_WATER_MARK_OUT = Mem.MB,
 
   /**
    * The minimum value in bytes for a page size.
-   * 
+   *
    * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
    */
   PAGE_SIZE_MIN = SYS_PAGE_SIZE,
 
   /**
    * The maximum value in bytes for a page size.
-   * 
+   *
    * Should ideally be a multiple of {@link SYS_PAGE_SIZE}
    */
-  PAGE_SIZE_MAX = 4294967296, // 4 GiB
+  PAGE_SIZE_MAX = Mem.MB_16,
 
   /**
    * The minimum number of web workers (inclusive).

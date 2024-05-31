@@ -1,4 +1,10 @@
-import { closeSync, createWriteStream, fstatSync, openSync, WriteStream } from "node:fs";
+import {
+  closeSync,
+  createWriteStream,
+  fstatSync,
+  openSync,
+  WriteStream,
+} from "node:fs";
 import { stdout } from "node:process";
 
 import type { MergeRequest } from "./types/mergeRequest";
