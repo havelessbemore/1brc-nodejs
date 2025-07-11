@@ -1,20 +1,16 @@
-import {
-  closeSync,
-  createWriteStream,
-  fstatSync,
-  openSync,
-  WriteStream,
-} from "node:fs";
-import { stdout } from "node:process";
+import fs from "node:fs";
+import process from "node:process";
 
-import type { MergeRequest } from "./types/mergeRequest";
-import type { MergeResponse } from "./types/mergeResponse";
-import type { ProcessRequest } from "./types/processRequest";
-import type { ProcessResponse } from "./types/processResponse";
+import {
+  MergeRequest,
+  MergeResponse,
+  ProcessRequest,
+  ProcessResponse,
+  RequestType,
+} from "./types";
 
 import { BRC } from "./constants/brc";
 import { Config } from "./constants/config";
-import { RequestType } from "./types/request";
 import { clamp, getChunkSize, getPageSize } from "./utils/stream";
 import { print } from "./utils/utf8Trie";
 import { createWorker, exec } from "./utils/worker";
@@ -29,10 +25,10 @@ export async function run(
   maxWorkers = clamp(maxWorkers, Config.WORKERS_MIN, Config.WORKERS_MAX);
 
   // Open the given file
-  const fd = openSync(filePath, "r");
+  const fd = fs.openSync(filePath, "r");
 
   // Get file stats
-  const fstats = fstatSync(fd);
+  const fstats = fs.fstatSync(fd);
   const fileSize = fstats.size;
   const pageSize = getPageSize(fileSize, maxWorkers);
   const chunkSize = getChunkSize(pageSize);
@@ -100,11 +96,11 @@ export async function run(
   await Promise.all(tasks);
 
   // Close the file
-  closeSync(fd);
+  fs.closeSync(fd);
 
   // Print results
-  const out = createWriteStream(outPath, {
-    fd: outPath.length < 1 ? stdout.fd : undefined,
+  const out = fs.createWriteStream(outPath, {
+    fd: outPath.length < 1 ? process.stdout.fd : undefined,
     flags: "a",
     highWaterMark: Config.HIGH_WATER_MARK_OUT,
   });
@@ -114,7 +110,7 @@ export async function run(
   out.end("}\n");
 
   function printStation(
-    stream: WriteStream,
+    stream: fs.WriteStream,
     name: Buffer,
     nameLen: number,
     vi: number,

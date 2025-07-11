@@ -14,23 +14,22 @@
 
 ### Results
 
-- Min: 11.1s
-- Avg: 11.6s
-- Max: 12.0s
-- Samples: 10 runs, 5s apart
+- Min: 4.477s
+- Avg: 4.528s
+- Max: 4.578s
+- Samples: 5 runs, 5s apart
 
 #### Specs:
 
 - Machine:
-
-  - Model: MacBook Air
-  - Chip: Apple M2
-  - Cores: 8 (4 performance + 4 efficiency)
-  - Memory: 8 GB
-  - OS: MacOS Sonoma
+  - Model: MacBook Pro
+  - Chip: Apple M4 Max
+  - Cores: 14 (10 performance and 4 efficiency)
+  - Memory: 36 GB
+  - OS: MacOS Sequoia
 
 - Other:
-  - NodeJS: v20.14.0
+  - NodeJS: v22.17.0
   - Input file: ~13.8 GB
 
 ## Build
@@ -55,4 +54,4 @@ npm install
 npm run build
 ```
 
-Output is built in the `dist/` directory as ECMAScript (`.mjs`) modules.
+Output is built in the `dist/` directory.

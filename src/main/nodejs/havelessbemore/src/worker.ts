@@ -1,4 +1,4 @@
-import { readSync } from "fs";
+import { readSync } from "node:fs";
 
 import type { MergeRequest } from "./types/mergeRequest";
 import type { MergeResponse } from "./types/mergeResponse";
@@ -47,7 +47,6 @@ export function run({
   let trie = createTrie(id);
 
   // For each page
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     // Get page start
     let start = pageSize * Atomics.add(page, 0, 1);

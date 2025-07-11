@@ -15,4 +15,4 @@
 #  limitations under the License.
 #
 
-time node --enable-source-maps src/main/nodejs/havelessbemore/dist/index.mjs measurements.txt
+time node --enable-source-maps src/main/nodejs/havelessbemore/dist/cjs/index.cjs measurements.txt

@@ -1,42 +1,48 @@
 {
-  "$schema": "http://json.schemastore.org/package",
+  "$schema": "http://json.schemastore.org/package.json",
+  "name": "1brc-nodejs",
+  "version": "1.0.0",
   "description": "Submission for the One Billion Row Challenge",
   "license": "MIT",
-  "author": "Michael Rojas <dev.michael.rojas@gmail.com> (https://github.com/havelessbemore)",
+  "type": "module",
+  "sideEffects": false,
   "homepage": "https://github.com/havelessbemore/1brc-nodejs",
   "bugs": "https://github.com/havelessbemore/1brc-nodejs/issues",
-  "sideEffects": false,
-  "engines": {
-    "node": ">= 18"
+  "author": {
+    "name": "Michael Rojas",
+    "url": "https://github.com/havelessbemore"
   },
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/esm/index.d.ts",
+      "require": "./dist/cjs/index.cjs",
+      "import": "./dist/esm/index.js"
     }
   },
   "scripts": {
-    "bench": "tsx ./benchmarks/bench.ts ../../../../measurements.txt",
-    "build": "rimraf dist && tsc && node ./esbuild.config.js",
-    "format": "prettier . --write",
-    "lint": "eslint ."
+    "bench": "node --enable-source-maps dist/cjs/benchmarks/index.cjs ../../../../measurements.txt",
+    "build": "tsup",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "start": "time node --enable-source-maps dist/cjs/index.cjs ../../../../measurements.txt"
   },
   "devDependencies": {
-    "@types/node": "^20.10.6",
-    "esbuild": "^0.21.4",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.2.5",
-    "rimraf": "^5.0.7",
-    "tinybench": "^2.8.0",
-    "tslib": "^2.6.2",
-    "tsx": "^4.10.5",
-    "typescript": "^5.4.5",
-    "typescript-eslint": "^7.10.0"
+    "@eslint/js": "^9.26.0",
+    "@eslint/json": "^0.12.0",
+    "@types/node": "^24.0.11",
+    "esbuild": "^0.25.4",
+    "eslint": "^9.26.0",
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.1.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.5.3",
+    "tinybench": "^4.0.1",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.32.1"
   }
 }

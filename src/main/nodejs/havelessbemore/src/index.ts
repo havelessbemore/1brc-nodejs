@@ -1,5 +1,4 @@
 import { availableParallelism } from "node:os";
-import { fileURLToPath } from "node:url";
 import { isMainThread, parentPort } from "node:worker_threads";
 
 import type { MergeRequest } from "./types/mergeRequest";
@@ -10,8 +9,7 @@ import { run as runMain } from "./main";
 import { merge, run as runWorker } from "./worker";
 
 if (isMainThread) {
-  const workerPath = fileURLToPath(import.meta.url);
-  runMain(process.argv[2], workerPath, availableParallelism());
+  runMain(process.argv[2], __filename, availableParallelism());
 } else {
   parentPort!.addListener("message", (msg: Request) => {
     if (msg.type === RequestType.PROCESS) {
